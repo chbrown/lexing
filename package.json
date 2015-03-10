@@ -1,0 +1,13 @@
+{
+  "name": "lexing",
+  "version": "0.1.2",
+  "description": "Regex-based lexer",
+  "keywords": [],
+  "homepage": "https://github.com/chbrown/lexing",
+  "repository": "git://github.com/chbrown/lexing.git",
+  "license": "MIT",
+  "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
+  "devDependencies": {
+    "typescript": "*"
+  }
+}
