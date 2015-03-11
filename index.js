@@ -69,6 +69,18 @@ var BufferedFileReader = (function () {
     BufferedFileReader.prototype.close = function () {
         fs.closeSync(this.fd);
     };
+    Object.defineProperty(BufferedFileReader.prototype, "position", {
+        /**
+        Return the position in the file that would be read from if we called
+        readBuffer(...). This is different from the internally-held position, which
+        points to the end of the currently held buffer.
+        */
+        get: function () {
+            return this.file_position - this.buffer.length;
+        },
+        enumerable: true,
+        configurable: true
+    });
     /**
     Calls fs.readSync on the underlying file descriptor with pretty much the same
     argument signature.

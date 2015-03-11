@@ -44,6 +44,12 @@ declare module "lexing" {
         static open(filepath: string): BufferedFileReader;
         close(): void;
         /**
+        Return the position in the file that would be read from if we called
+        readBuffer(...). This is different from the internally-held position, which
+        points to the end of the currently held buffer.
+        */
+        position: number;
+        /**
         Calls fs.readSync on the underlying file descriptor with pretty much the same
         argument signature.
       
