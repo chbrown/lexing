@@ -2,12 +2,16 @@
   "name": "lexing",
   "version": "0.1.4",
   "description": "Regex-based lexer",
-  "keywords": [],
+  "keywords": ["lexer", "parser"],
   "homepage": "https://github.com/chbrown/lexing",
   "repository": "git://github.com/chbrown/lexing.git",
   "license": "MIT",
   "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
   "devDependencies": {
+    "mocha": "*",
     "typescript": "*"
+  },
+  "scripts": {
+    "test": "make test"
   }
 }

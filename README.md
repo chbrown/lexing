@@ -23,26 +23,45 @@ Or just a string in the PDF string case:
 
     "This is a long string (with (in parentheses) a parenthetical)"
 
-The `new lexing.BufferedLexer(default_rules [, state_rules])` implementation provided in this module represents state as a stack of things (hopefully just strings), but this could be abused. The lexer constructor takes an optional second argument: an object mapping state names to lists of rules that apply only in those states. These operate like exclusive conditional states in `flex`, except there are no exceptions to the exclusivity, i.e., there is no `<*>` condition specifier. The current state is the last (top) state in the state stack. The `default_rules` rules apply only when the state stack is empty (the default).
 
-The lexer has one main function, `lexer.read()`. This reads an input_string from the `lexer.reader` instance, and iterates over the rules that apply in the current state.
+## Implementation
+
+The `new lexing.Tokenizer(default_rules [, state_rules])` implementation provided in this module is the most basic lexer provided, representing state as a stack of strings. The `lexing.Tokenizer` constructor takes an optional second argument: an object mapping state names to lists of rules that apply only in those states. These operate like exclusive conditional states in `flex`, except there are no exceptions to the exclusivity, i.e., there is no `<*>` condition specifier. The current state is the last (top) state in the state stack. The `default_rules` rules apply only when the state stack is empty (the default).
+
+The tokenizer has one main function, `tokenizer.map(buffer_iterable)`, which returns a `TokenIterable`. `buffer_iterable` should implement the `BufferIterable` interface, i.e.:
+
+    interface BufferIterable {
+      position: number;
+      size: number;
+      next(length: number): Buffer;
+      peek(length: number): Buffer;
+      skip(length: number): number;
+    }
+
+The following readers defined in `lexing` all return instances implementing the `BufferIterable` interface:
+
+* `new lexing.BufferIterator(buffer)`
+* `lexing.BufferIterator.fromString(str, encoding)`
+* `new lexing.FileIterator(file_descriptor)`
+* `lexing.FileIterator.open(file_path)`
+
+The `TokenIterable` instance returned by `tokenizer.map(...)` has one method: `next()`, which returns a non-null `Token`.
+Every `Token` has a non-null `name` field (a string) and a `value` field (of any type; potentially null or undefined).
 
 Each rule is a `[RegExp, Function]` tuple. When a rule's regular expression matches the input, the following happens:
 
 1. We keep the value returned from `input_string.match(rule[0])` as `match`.
 2. The input cursor is advanced over the length of the full match (`match[0]`).
-3. The lexer returns the result of calling `input_string.match(rule[0])`, with the lexer bound as `this` inside the function.
+3. The tokenizer returns the result of calling `input_string.match(rule[0])`, with the tokenizer bound as `this` inside the rule's function.
 
-If no rules in the current state match the current input, the lexer will throw an "Invalid language" error.
-
-The lexer has another function: `lexer.next()`, which calls `lexer.read()` in a loop until it returns a non-null result, and returns that result.
+If no rules in the current state match the current input, the tokenizer will throw an "Invalid language" error.
 
 
 ## Quickstart
 
 From the shell in your project's root directory:
 
-    npm install lexing --save
+    npm installl lexing --save
 
 In your code:
 
@@ -52,27 +71,27 @@ In your code:
     // to more catch-all. The ^ anchor before every regex is required!
     var rules = [
       [/^$/, function(match) {
-        return ['EOF', null];
+        return lexing.Token('EOF', null);
       }],
       [/^\s+/, function(match) {
         return null; // ignore whitespace
       }],
-      [/^[^!"#$%&'()*+,\-./:;<=>?@[\\\]\^_`{|}~]+/, function(match) {
-        return ['TOKEN', match[0]];
+      [/^[^!"#$%&'()*+,\-./:;<=>?@[\\\]\^_`{|}~\s]+/, function(match) {
+        return lexing.Token('WORD', match[0]);
       }],
       [/^./, function(match) {
-        return ['PUNCTUATION', match[0]];
+        return lexing.Token('PUNCTUATION', match[0]);
       }],
     ];
 
-    var lexer = new lexing.BufferedLexer(rules);
-
-    lexer.reader = new lexing.BufferedStringReader("'It wasn't at all my fault', I cried.");
+    var tokenizer = new lexing.Tokenizer(rules);
+    var input = lexing.BufferIterator.fromString("'It wasn't at all my fault', I cried.");
+    var output = tokenizer.map(input);
 
     do {
-      var token_value = lexer.next();
-      console.log('token=%s => %j', token_value[0], token_value[1]);
-    } while (token_value[0] !== 'EOF');
+      var token = output.next();
+      console.log('token=%s => %j', token.name, token.value);
+    } while (token.name !== 'EOF');
 
 
 ## TypeScript integration
