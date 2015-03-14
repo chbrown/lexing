@@ -6,25 +6,15 @@ var fs = require('fs');
 Wraps a Buffer as a stateful iterable.
 */
 var BufferIterator = (function () {
-    function BufferIterator(_buffer, _position) {
-        if (_position === void 0) { _position = 0; }
+    function BufferIterator(_buffer, position) {
+        if (position === void 0) { position = 0; }
         this._buffer = _buffer;
-        this._position = _position;
+        this.position = position;
     }
     BufferIterator.fromString = function (str, encoding) {
         var buffer = new Buffer(str, encoding);
         return new BufferIterator(buffer);
     };
-    Object.defineProperty(BufferIterator.prototype, "position", {
-        /**
-        Return the current position within the underlying Buffer.
-        */
-        get: function () {
-            return this._position;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(BufferIterator.prototype, "size", {
         /**
         Return the total length of the underlying Buffer.
@@ -40,7 +30,7 @@ var BufferIterator = (function () {
     EOF, without advancing our position within the Buffer. Returns a Buffer slice.
     */
     BufferIterator.prototype.peek = function (length) {
-        return this._buffer.slice(this._position, this._position + length);
+        return this._buffer.slice(this.position, this.position + length);
     };
     /**
     Read the next `length` bytes from the underlying Buffer, or fewer iff we reach
@@ -51,8 +41,8 @@ var BufferIterator = (function () {
         `new Buffer([1, 2, 3, 4]).slice(2, 10)` produces `<Buffer 03 04>`
     */
     BufferIterator.prototype.next = function (length) {
-        var buffer = this._buffer.slice(this._position, this._position + length);
-        this._position += buffer.length;
+        var buffer = this._buffer.slice(this.position, this.position + length);
+        this.position += buffer.length;
         return buffer;
     };
     /**
@@ -62,8 +52,8 @@ var BufferIterator = (function () {
     We do not allow skipping beyond the end of the buffer.
     */
     BufferIterator.prototype.skip = function (length) {
-        var bytesSkipped = Math.min(length, this._buffer.length - this._position);
-        this._position += bytesSkipped;
+        var bytesSkipped = Math.min(length, this._buffer.length - this.position);
+        this.position += bytesSkipped;
         return bytesSkipped;
     };
     return BufferIterator;

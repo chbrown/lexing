@@ -42,18 +42,11 @@ export interface StatefulChunkedIterable<T> extends ChunkedIterable<T> {
 Wraps a Buffer as a stateful iterable.
 */
 export class BufferIterator implements StatefulChunkedIterable<Buffer> {
-  constructor(private _buffer: Buffer, private _position = 0) { }
+  constructor(private _buffer: Buffer, public position = 0) { }
 
   static fromString(str: string, encoding?: string): BufferIterator {
     var buffer = new Buffer(str, encoding);
     return new BufferIterator(buffer);
-  }
-
-  /**
-  Return the current position within the underlying Buffer.
-  */
-  get position(): number {
-    return this._position;
   }
 
   /**
@@ -68,7 +61,7 @@ export class BufferIterator implements StatefulChunkedIterable<Buffer> {
   EOF, without advancing our position within the Buffer. Returns a Buffer slice.
   */
   peek(length: number): Buffer {
-    return this._buffer.slice(this._position, this._position + length);
+    return this._buffer.slice(this.position, this.position + length);
   }
 
   /**
@@ -80,8 +73,8 @@ export class BufferIterator implements StatefulChunkedIterable<Buffer> {
       `new Buffer([1, 2, 3, 4]).slice(2, 10)` produces `<Buffer 03 04>`
   */
   next(length: number): Buffer {
-    var buffer = this._buffer.slice(this._position, this._position + length);
-    this._position += buffer.length;
+    var buffer = this._buffer.slice(this.position, this.position + length);
+    this.position += buffer.length;
     return buffer;
   }
 
@@ -92,8 +85,8 @@ export class BufferIterator implements StatefulChunkedIterable<Buffer> {
   We do not allow skipping beyond the end of the buffer.
   */
   skip(length: number): number {
-    var bytesSkipped = Math.min(length, this._buffer.length - this._position);
-    this._position += bytesSkipped;
+    var bytesSkipped = Math.min(length, this._buffer.length - this.position);
+    this.position += bytesSkipped;
     return bytesSkipped;
   }
 }
