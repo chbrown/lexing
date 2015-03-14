@@ -188,20 +188,11 @@ when the buffer doesn't have enough data.
 When calling `read()` on the underlying file, it will read batches of
 `_block_size` (default: 1024) bytes.
 */
-export class FileIterator implements BufferIterable {
-  private _buffer: Buffer = new Buffer(0);
+export class BufferedFileReader {
+  protected _buffer: Buffer = new Buffer(0);
 
   // when reading more data, pull in chunks of `_block_size` bytes.
   constructor(private _fd: number, private _position = 0, private _block_size = 1024) { }
-
-  static open(filepath: string): FileIterator {
-    var fd = fs.openSync(filepath, 'r');
-    return new FileIterator(fd);
-  }
-
-  close(): void {
-    fs.closeSync(this._fd);
-  }
 
   /**
   Return the position in the file that would be read from if we called
@@ -220,28 +211,11 @@ export class FileIterator implements BufferIterable {
   }
 
   /**
-  Ensure that the available buffer is at least `length` bytes long.
-
-  This may return without the condition being met (this.buffer.length >= length),
-  if the end of the underlying file has been reached.
-
-  TODO: pull _fillBuffer into the loop, with the Buffer declaration outside.
-  */
-  private _ensureLength(length: number): void {
-    while (length > this._buffer.length) {
-      // all the action happens only if we need more bytes than are in the buffer
-      var EOF = this._fillBuffer(this._block_size);
-      if (EOF) {
-        // exit regardless
-        break;
-      }
-    }
-  }
-
-  /**
   Read data from the underlying file and append it to the buffer.
 
-  Returns false iff EOF has been reached, otherwise returns true. */
+  Returns false if the read operation reads fewer than the requested bytes,
+  usually signifying that EOF has been reached.
+  */
   private _fillBuffer(length: number): boolean {
     var buffer = new Buffer(length);
     // always read from the current position
@@ -251,6 +225,36 @@ export class FileIterator implements BufferIterable {
     // use the Buffer.concat totalLength argument to slice the fresh buffer if needed
     this._buffer = Buffer.concat([this._buffer, buffer], this._buffer.length + bytesRead);
     return bytesRead < length;
+  }
+
+  /**
+  Read from the underlying file, appending to the currently held buffer,
+  until the given predicate function returns false. That function will be called
+  repeatedly with no arguments. If it returns false the first time it is called,
+  nothing will be read.
+
+  This may return without the condition being met, if the end of the underlying
+  file has been reached.
+  */
+  protected _readWhile(predicate: (buffer: Buffer) => boolean): void {
+    while (predicate(this._buffer)) {
+      var EOF = this._fillBuffer(this._block_size);
+      if (EOF) {
+        // exit regardless
+        break;
+      }
+    }
+  }
+}
+
+export class FileBufferIterator extends BufferedFileReader implements BufferIterable {
+  constructor(_fd: number, _position = 0, _block_size = 1024) {
+    super(_fd, _position, _block_size);
+  }
+
+  private _ensureLength(length: number): void {
+    // all the action happens only if we need more bytes than are in the buffer
+    this._readWhile(() => length > this._buffer.length);
   }
 
   next(length: number): Buffer {
@@ -266,12 +270,73 @@ export class FileIterator implements BufferIterable {
   }
 
   /**
-  Skip over the next `length` characters, returning the number of skipped
-  characters (which may be < `length` iff EOF has been reached).
+  Skip over the next `length` bytes, returning the number of skipped
+  bytes (which may be < `length` iff EOF has been reached).
   */
   skip(length: number): number {
     this._ensureLength(length);
     // we cannot skip more than `this.buffer.length` bytes
+    var bytesSkipped = Math.min(length, this._buffer.length);
+    this._buffer = this._buffer.slice(length);
+    return bytesSkipped;
+  }
+}
+
+export class FileStringIterator extends BufferedFileReader implements StringIterable {
+  constructor(_fd: number, private _encoding: string, _position = 0, _block_size = 1024) {
+    super(_fd, _position, _block_size);
+  }
+
+  private _ensureLength(length: number): void {
+    // TODO: count characters without reencoding
+    this._readWhile(() => length > this._buffer.toString(this._encoding).length);
+  }
+
+  next(length: number): string {
+    // TODO: don't re-encode the whole string and then only use a tiny bit of it
+    this._ensureLength(length);
+    var str = this._buffer.toString(this._encoding).slice(0, length);
+    var byteLength = Buffer.byteLength(str, this._encoding);
+    this._buffer = this._buffer.slice(byteLength);
+    return str;
+  }
+
+  peek(length: number): string {
+    // TODO (see TODO in next())
+    this._ensureLength(length);
+    return this._buffer.toString(this._encoding).slice(0, length);
+  }
+
+  /**
+  Skip over the next `length` characters, returning the number of skipped
+  characters (which may be < `length` iff EOF has been reached).
+  */
+  skip(length: number): number {
+    // TODO (see TODO in next())
+    this._ensureLength(length);
+    var consumed_string = this._buffer.toString(this._encoding).slice(0, length);
+    var byteLength = Buffer.byteLength(consumed_string, this._encoding);
+    // we cannot skip more than `this._buffer.length` bytes
+    var bytesSkipped = Math.min(byteLength, this._buffer.length);
+    this._buffer = this._buffer.slice(byteLength);
+    return consumed_string.length;
+  }
+
+  /**
+  Provide raw Buffer-level access, too.
+  */
+  nextBytes(length: number): Buffer {
+    this._ensureLength(length);
+    var buffer = this._buffer.slice(0, length);
+    this._buffer = this._buffer.slice(length);
+    return buffer;
+  }
+  peekBytes(length: number): Buffer {
+    this._ensureLength(length);
+    return this._buffer.slice(0, length);
+  }
+  skipBytes(length: number): number {
+    this._ensureLength(length);
     var bytesSkipped = Math.min(length, this._buffer.length);
     this._buffer = this._buffer.slice(length);
     return bytesSkipped;

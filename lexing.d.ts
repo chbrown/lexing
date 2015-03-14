@@ -121,14 +121,12 @@ declare module "lexing" {
     When calling `read()` on the underlying file, it will read batches of
     `_block_size` (default: 1024) bytes.
     */
-    class FileIterator implements BufferIterable {
+    class BufferedFileReader {
         private _fd;
         private _position;
         private _block_size;
-        private _buffer;
+        protected _buffer: Buffer;
         constructor(_fd: number, _position?: number, _block_size?: number);
-        static open(filepath: string): FileIterator;
-        close(): void;
         /**
         Return the position in the file that would be read from if we called
         read(...). This is different from the internally-held position, which
@@ -140,26 +138,51 @@ declare module "lexing" {
         */
         size: number;
         /**
-        Ensure that the available buffer is at least `length` bytes long.
-      
-        This may return without the condition being met (this.buffer.length >= length),
-        if the end of the underlying file has been reached.
-      
-        TODO: pull _fillBuffer into the loop, with the Buffer declaration outside.
-        */
-        private _ensureLength(length);
-        /**
         Read data from the underlying file and append it to the buffer.
       
-        Returns false iff EOF has been reached, otherwise returns true. */
+        Returns false if the read operation reads fewer than the requested bytes,
+        usually signifying that EOF has been reached.
+        */
         private _fillBuffer(length);
+        /**
+        Read from the underlying file, appending to the currently held buffer,
+        until the given predicate function returns false. That function will be called
+        repeatedly with no arguments. If it returns false the first time it is called,
+        nothing will be read.
+      
+        This may return without the condition being met, if the end of the underlying
+        file has been reached.
+        */
+        protected _readWhile(predicate: (buffer: Buffer) => boolean): void;
+    }
+    class FileBufferIterator extends BufferedFileReader implements BufferIterable {
+        constructor(_fd: number, _position?: number, _block_size?: number);
+        private _ensureLength(length);
         next(length: number): Buffer;
         peek(length: number): Buffer;
+        /**
+        Skip over the next `length` bytes, returning the number of skipped
+        bytes (which may be < `length` iff EOF has been reached).
+        */
+        skip(length: number): number;
+    }
+    class FileStringIterator extends BufferedFileReader implements StringIterable {
+        private _encoding;
+        constructor(_fd: number, _encoding: string, _position?: number, _block_size?: number);
+        private _ensureLength(length);
+        next(length: number): string;
+        peek(length: number): string;
         /**
         Skip over the next `length` characters, returning the number of skipped
         characters (which may be < `length` iff EOF has been reached).
         */
         skip(length: number): number;
+        /**
+        Provide raw Buffer-level access, too.
+        */
+        nextBytes(length: number): Buffer;
+        peekBytes(length: number): Buffer;
+        skipBytes(length: number): number;
     }
     /**
     Tokenizer#map() and Combiner#map() both return Token iterators.

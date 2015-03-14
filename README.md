@@ -42,13 +42,13 @@ The following readers defined in `lexing` all return instances implementing the 
 
 * `new lexing.StringIterable(str)`
 * `lexing.StringIterable.fromBuffer(buffer, encoding)`
+* `new lexing.FileStringIterator(file_descriptor)`
 
 There are other Buffer-based readers as well:
 
 * `new lexing.BufferIterator(buffer)`
 * `lexing.BufferIterator.fromString(str, encoding)`
-* `new lexing.FileIterator(file_descriptor)`
-* `lexing.FileIterator.open(file_path)`
+* `new lexing.FileBufferIterator(file_descriptor)`
 
 The `TokenIterable` instance returned by `tokenizer.map(...)` has one method: `next()`, which returns a non-null `Token`.
 Every `Token` has a non-null `name` field (a string) and a `value` field (of any type; potentially null or undefined).
