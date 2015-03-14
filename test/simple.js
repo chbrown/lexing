@@ -2,6 +2,7 @@
 /// <reference path="../type_declarations/DefinitelyTyped/mocha/mocha.d.ts" />
 var assert = require('assert');
 var lexing = require('../index');
+var Token = lexing.Token;
 function readToEOF(iterable) {
     var items = [];
     while (1) {
@@ -12,10 +13,6 @@ function readToEOF(iterable) {
         }
     }
     return items;
-}
-function Token(name, value) {
-    if (value === void 0) { value = null; }
-    return { name: name, value: value };
 }
 describe('tokenizer', function () {
     var tokenizer = new lexing.Tokenizer([
