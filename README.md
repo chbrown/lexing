@@ -28,17 +28,22 @@ Or just a string in the PDF string case:
 
 The `new lexing.Tokenizer(default_rules [, state_rules])` implementation provided in this module is the most basic lexer provided, representing state as a stack of strings. The `lexing.Tokenizer` constructor takes an optional second argument: an object mapping state names to lists of rules that apply only in those states. These operate like exclusive conditional states in `flex`, except there are no exceptions to the exclusivity, i.e., there is no `<*>` condition specifier. The current state is the last (top) state in the state stack. The `default_rules` rules apply only when the state stack is empty (the default).
 
-The tokenizer has one main function, `tokenizer.map(buffer_iterable)`, which returns a `TokenIterable`. `buffer_iterable` should implement the `BufferIterable` interface, i.e.:
+The tokenizer has one main function, `tokenizer.map(string_iterable)`, which returns a `TokenIterable`. `string_iterable` should implement the `StringIterable` interface, i.e.:
 
-    interface BufferIterable {
+    interface StringIterable {
       position: number;
       size: number;
-      next(length: number): Buffer;
-      peek(length: number): Buffer;
+      next(length: number): string;
+      peek(length: number): string;
       skip(length: number): number;
     }
 
-The following readers defined in `lexing` all return instances implementing the `BufferIterable` interface:
+The following readers defined in `lexing` all return instances implementing the `StringIterable` interface:
+
+* `new lexing.StringIterable(str)`
+* `lexing.StringIterable.fromBuffer(buffer, encoding)`
+
+There are other Buffer-based readers as well:
 
 * `new lexing.BufferIterator(buffer)`
 * `lexing.BufferIterator.fromString(str, encoding)`
@@ -85,7 +90,7 @@ In your code:
     ];
 
     var tokenizer = new lexing.Tokenizer(rules);
-    var input = lexing.BufferIterator.fromString("'It wasn't at all my fault', I cried.");
+    var input = new lexing.StringIterator("'It wasn't at all my fault', I cried.");
     var output = tokenizer.map(input);
 
     do {

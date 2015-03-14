@@ -39,9 +39,14 @@ export interface StatefulChunkedIterable<T> extends ChunkedIterable<T> {
 //                           BASIC BUFFER READER
 
 /**
+Commonly used special case.
+*/
+export interface BufferIterable extends StatefulChunkedIterable<Buffer> { }
+
+/**
 Wraps a Buffer as a stateful iterable.
 */
-export class BufferIterator implements StatefulChunkedIterable<Buffer> {
+export class BufferIterator implements BufferIterable {
   constructor(private _buffer: Buffer, public position = 0) { }
 
   static fromString(str: string, encoding?: string): BufferIterator {
@@ -91,6 +96,57 @@ export class BufferIterator implements StatefulChunkedIterable<Buffer> {
   }
 }
 
+export interface StringIterable extends StatefulChunkedIterable<string> { }
+
+/**
+Wraps a string as a stateful iterable.
+*/
+export class StringIterator implements StringIterable {
+  constructor(private _string: string, public position = 0) { }
+
+  static fromBuffer(buffer: Buffer, encoding?: string): StringIterator {
+    var str = buffer.toString(encoding);
+    return new StringIterator(str);
+  }
+
+  /**
+  Return the total length of the underlying Buffer.
+  */
+  get size(): number {
+    return this._string.length;
+  }
+
+  /**
+  Read the next `length` characters from the underlying string, or fewer iff
+  we reach EOF, without advancing our position within the string.
+  */
+  peek(length: number): string {
+    return this._string.slice(this.position, this.position + length);
+  }
+
+  /**
+  Read the next `length` characters from the underlying string, or fewer iff
+  we reach EOF, and advance our position within the string.
+  */
+  next(length: number): string {
+    var chunk = this._string.slice(this.position, this.position + length);
+    this.position += chunk.length;
+    return chunk;
+  }
+
+  /**
+  Skip over the next `length` characters, returning the number of skipped
+  characters (which may be < `length` iff EOF has been reached).
+
+  We do not allow skipping beyond the end of the string.
+  */
+  skip(length: number): number {
+    var charsSkipped = Math.min(length, this._string.length - this.position);
+    this.position += charsSkipped;
+    return charsSkipped;
+  }
+}
+
 /**
 Wrap an Array as an iterable.
 */
@@ -132,7 +188,7 @@ when the buffer doesn't have enough data.
 When calling `read()` on the underlying file, it will read batches of
 `_block_size` (default: 1024) bytes.
 */
-export class FileIterator implements StatefulChunkedIterable<Buffer> {
+export class FileIterator implements BufferIterable {
   private _buffer: Buffer = new Buffer(0);
 
   // when reading more data, pull in chunks of `_block_size` bytes.
@@ -228,11 +284,6 @@ export class FileIterator implements StatefulChunkedIterable<Buffer> {
 //                             (the good stuff)
 
 /**
-Commonly used special case.
-*/
-export interface BufferIterable extends StatefulChunkedIterable<Buffer> { }
-
-/**
 Tokenizer#map() and Combiner#map() both return Token iterators.
 
 Tokens with a null name and null Tokens should be treated the same way (as
@@ -263,8 +314,6 @@ export interface RegexRule<T> extends Array<RegExp | RegexAction<T>> { 0: RegExp
 /**
 The type T is the type of each token value, usually `any` (the token name is
 always a string).
-
-BufferIterable
 */
 export class Tokenizer<T> {
   constructor(private default_rules: RegexRule<T>[],
@@ -280,14 +329,14 @@ export class Tokenizer<T> {
   Unfortunately, it seems that TypeScript doesn't like inline functions, so we
   use a helper class (TokenizerIterator).
   */
-  map(iterable: BufferIterable, states: string[] = []): TokenIterable<T> {
+  map(iterable: StringIterable, states: string[] = []): TokenIterable<T> {
     return new TokenizerIterator(this, iterable, states);
   }
 }
 
 class TokenizerIterator<T> implements TokenIterable<T> {
   constructor(private tokenizer: Tokenizer<T>,
-              public iterable: BufferIterable,
+              public iterable: StringIterable,
               public states: string[]) { }
 
   /**
@@ -299,12 +348,11 @@ class TokenizerIterator<T> implements TokenIterable<T> {
   private _next(): Token<T> {
     var state = this.states[this.states.length - 1];
     var rules = this.tokenizer.getRules(state);
-    var input = this.iterable.peek(256).toString('utf8');
+    var input = this.iterable.peek(256);
     for (var i = 0, rule; (rule = rules[i]); i++) {
       var match = input.match(rule[0]);
       if (match) {
-        var byteLength = Buffer.byteLength(match[0], 'utf8');
-        this.iterable.skip(byteLength);
+        this.iterable.skip(match[0].length);
         return rule[1].call(this, match);
       }
     }

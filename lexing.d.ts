@@ -28,17 +28,18 @@ declare module "lexing" {
         skip(length: number): number;
     }
     /**
+    Commonly used special case.
+    */
+    interface BufferIterable extends StatefulChunkedIterable<Buffer> {
+    }
+    /**
     Wraps a Buffer as a stateful iterable.
     */
-    class BufferIterator implements StatefulChunkedIterable<Buffer> {
+    class BufferIterator implements BufferIterable {
         private _buffer;
-        private _position;
-        constructor(_buffer: Buffer, _position?: number);
-        static fromString(str: string, encoding?: string): BufferIterator;
-        /**
-        Return the current position within the underlying Buffer.
-        */
         position: number;
+        constructor(_buffer: Buffer, position?: number);
+        static fromString(str: string, encoding?: string): BufferIterator;
         /**
         Return the total length of the underlying Buffer.
         */
@@ -65,6 +66,38 @@ declare module "lexing" {
         */
         skip(length: number): number;
     }
+    interface StringIterable extends StatefulChunkedIterable<string> {
+    }
+    /**
+    Wraps a string as a stateful iterable.
+    */
+    class StringIterator implements StringIterable {
+        private _string;
+        position: number;
+        constructor(_string: string, position?: number);
+        static fromBuffer(buffer: Buffer, encoding?: string): StringIterator;
+        /**
+        Return the total length of the underlying Buffer.
+        */
+        size: number;
+        /**
+        Read the next `length` characters from the underlying string, or fewer iff
+        we reach EOF, without advancing our position within the string.
+        */
+        peek(length: number): string;
+        /**
+        Read the next `length` characters from the underlying string, or fewer iff
+        we reach EOF, and advance our position within the string.
+        */
+        next(length: number): string;
+        /**
+        Skip over the next `length` characters, returning the number of skipped
+        characters (which may be < `length` iff EOF has been reached).
+      
+        We do not allow skipping beyond the end of the string.
+        */
+        skip(length: number): number;
+    }
     /**
     Wrap an Array as an iterable.
     */
@@ -88,7 +121,7 @@ declare module "lexing" {
     When calling `read()` on the underlying file, it will read batches of
     `_block_size` (default: 1024) bytes.
     */
-    class FileIterator implements StatefulChunkedIterable<Buffer> {
+    class FileIterator implements BufferIterable {
         private _fd;
         private _position;
         private _block_size;
@@ -129,11 +162,6 @@ declare module "lexing" {
         skip(length: number): number;
     }
     /**
-    Commonly used special case.
-    */
-    interface BufferIterable extends StatefulChunkedIterable<Buffer> {
-    }
-    /**
     Tokenizer#map() and Combiner#map() both return Token iterators.
     
     Tokens with a null name and null Tokens should be treated the same way (as
@@ -161,8 +189,6 @@ declare module "lexing" {
     /**
     The type T is the type of each token value, usually `any` (the token name is
     always a string).
-    
-    BufferIterable
     */
     class Tokenizer<T> {
         private default_rules;
@@ -177,7 +203,7 @@ declare module "lexing" {
         Unfortunately, it seems that TypeScript doesn't like inline functions, so we
         use a helper class (TokenizerIterator).
         */
-        map(iterable: BufferIterable, states?: string[]): TokenIterable<T>;
+        map(iterable: StringIterable, states?: string[]): TokenIterable<T>;
     }
     interface CombinerAction<T, U> {
         (tokens: Token<T>[]): Token<U>;

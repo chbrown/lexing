@@ -1,7 +1,5 @@
 /// <reference path="type_declarations/DefinitelyTyped/node/node.d.ts" />
 var fs = require('fs');
-// #############################################################################
-//                           BASIC BUFFER READER
 /**
 Wraps a Buffer as a stateful iterable.
 */
@@ -59,6 +57,59 @@ var BufferIterator = (function () {
     return BufferIterator;
 })();
 exports.BufferIterator = BufferIterator;
+/**
+Wraps a string as a stateful iterable.
+*/
+var StringIterator = (function () {
+    function StringIterator(_string, position) {
+        if (position === void 0) { position = 0; }
+        this._string = _string;
+        this.position = position;
+    }
+    StringIterator.fromBuffer = function (buffer, encoding) {
+        var str = buffer.toString(encoding);
+        return new StringIterator(str);
+    };
+    Object.defineProperty(StringIterator.prototype, "size", {
+        /**
+        Return the total length of the underlying Buffer.
+        */
+        get: function () {
+            return this._string.length;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    /**
+    Read the next `length` characters from the underlying string, or fewer iff
+    we reach EOF, without advancing our position within the string.
+    */
+    StringIterator.prototype.peek = function (length) {
+        return this._string.slice(this.position, this.position + length);
+    };
+    /**
+    Read the next `length` characters from the underlying string, or fewer iff
+    we reach EOF, and advance our position within the string.
+    */
+    StringIterator.prototype.next = function (length) {
+        var chunk = this._string.slice(this.position, this.position + length);
+        this.position += chunk.length;
+        return chunk;
+    };
+    /**
+    Skip over the next `length` characters, returning the number of skipped
+    characters (which may be < `length` iff EOF has been reached).
+  
+    We do not allow skipping beyond the end of the string.
+    */
+    StringIterator.prototype.skip = function (length) {
+        var charsSkipped = Math.min(length, this._string.length - this.position);
+        this.position += charsSkipped;
+        return charsSkipped;
+    };
+    return StringIterator;
+})();
+exports.StringIterator = StringIterator;
 /**
 Wrap an Array as an iterable.
 */
@@ -206,8 +257,6 @@ exports.Token = Token;
 /**
 The type T is the type of each token value, usually `any` (the token name is
 always a string).
-
-BufferIterable
 */
 var Tokenizer = (function () {
     function Tokenizer(default_rules, state_rules) {
@@ -246,12 +295,11 @@ var TokenizerIterator = (function () {
     TokenizerIterator.prototype._next = function () {
         var state = this.states[this.states.length - 1];
         var rules = this.tokenizer.getRules(state);
-        var input = this.iterable.peek(256).toString('utf8');
+        var input = this.iterable.peek(256);
         for (var i = 0, rule; (rule = rules[i]); i++) {
             var match = input.match(rule[0]);
             if (match) {
-                var byteLength = Buffer.byteLength(match[0], 'utf8');
-                this.iterable.skip(byteLength);
+                this.iterable.skip(match[0].length);
                 return rule[1].call(this, match);
             }
         }

@@ -24,7 +24,7 @@ describe('tokenizer', function() {
   ]);
 
   it('should lex simple string', function() {
-    var input_iterable = lexing.BufferIterator.fromString('This is a simple sentence');
+    var input_iterable = new lexing.StringIterator('This is a simple sentence');
     var output_iterable = tokenizer.map(input_iterable);
 
     var expected_tokens = [
