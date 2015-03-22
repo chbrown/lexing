@@ -216,9 +216,10 @@ declare module "lexing" {
     class Tokenizer<T> {
         private default_rules;
         private state_rules;
+        peek_length: number;
         constructor(default_rules: RegexRule<T>[], state_rules?: {
             [index: string]: RegexRule<T>[];
-        });
+        }, peek_length?: number);
         getRules(state_name: string): RegexRule<T>[];
         /**
         Create a closure around the iterable.

@@ -337,10 +337,12 @@ The type T is the type of each token value, usually `any` (the token name is
 always a string).
 */
 var Tokenizer = (function () {
-    function Tokenizer(default_rules, state_rules) {
+    function Tokenizer(default_rules, state_rules, peek_length) {
         if (state_rules === void 0) { state_rules = {}; }
+        if (peek_length === void 0) { peek_length = 256; }
         this.default_rules = default_rules;
         this.state_rules = state_rules;
+        this.peek_length = peek_length;
     }
     Tokenizer.prototype.getRules = function (state_name) {
         return (state_name === undefined) ? this.default_rules : this.state_rules[state_name];
@@ -373,7 +375,7 @@ var TokenizerIterator = (function () {
     TokenizerIterator.prototype._next = function () {
         var state = this.states[this.states.length - 1];
         var rules = this.tokenizer.getRules(state);
-        var input = this.iterable.peek(256);
+        var input = this.iterable.peek(this.tokenizer.peek_length);
         for (var i = 0, rule; (rule = rules[i]); i++) {
             var match = input.match(rule[0]);
             if (match) {
@@ -381,7 +383,8 @@ var TokenizerIterator = (function () {
                 return rule[1].call(this, match);
             }
         }
-        throw new Error("Invalid language; could not find a match in input \"" + input + "\" while in state \"" + state + "\"");
+        var state_description = (state === undefined) ? 'the default state' : "state \"" + state + "\"";
+        throw new Error("Invalid language; could not find a match in input \"" + input + "\" while in " + state_description);
     };
     /**
     Returns the next available non-null token / symbol output from the input

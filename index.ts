@@ -382,7 +382,8 @@ always a string).
 */
 export class Tokenizer<T> {
   constructor(private default_rules: RegexRule<T>[],
-              private state_rules: {[index: string]: RegexRule<T>[]} = {}) { }
+              private state_rules: {[index: string]: RegexRule<T>[]} = {},
+              public peek_length: number = 256) { }
 
   getRules(state_name: string): RegexRule<T>[] {
     return (state_name === undefined) ? this.default_rules : this.state_rules[state_name];
@@ -413,7 +414,7 @@ class TokenizerIterator<T> implements TokenIterable<T> {
   private _next(): Token<T> {
     var state = this.states[this.states.length - 1];
     var rules = this.tokenizer.getRules(state);
-    var input = this.iterable.peek(256);
+    var input = this.iterable.peek(this.tokenizer.peek_length);
     for (var i = 0, rule; (rule = rules[i]); i++) {
       var match = input.match(rule[0]);
       if (match) {
@@ -422,7 +423,8 @@ class TokenizerIterator<T> implements TokenIterable<T> {
       }
     }
 
-    throw new Error(`Invalid language; could not find a match in input "${input}" while in state "${state}"`);
+    var state_description = (state === undefined) ? 'the default state' : `state "${state}"`;
+    throw new Error(`Invalid language; could not find a match in input "${input}" while in ${state_description}`);
   }
 
   /**
