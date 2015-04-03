@@ -472,6 +472,10 @@ var CombinerIterator = (function () {
     };
     return CombinerIterator;
 })();
+function MachineRule(regexp, callback) {
+    return [regexp, callback];
+}
+exports.MachineRule = MachineRule;
 /**
 Every MachineState has:
 

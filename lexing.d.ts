@@ -259,6 +259,7 @@ declare module "lexing" {
         0: RegExp;
         1: MachineCallback<T>;
     }
+    function MachineRule<T>(regexp: RegExp, callback: MachineCallback<T>): MachineRule<T>;
     /**
     Every MachineState has:
     

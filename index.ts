@@ -523,6 +523,9 @@ class CombinerIterator<T> implements TokenIterable<T> {
 export interface MachineCallback<T> { (match?: RegExpMatchArray): T }
 // type MachineRule<T> = [RegExp, MachineCallback<T>] // unfortunately doesn't work
 export interface MachineRule<T> extends Array<RegExp | MachineCallback<T>> { 0: RegExp; 1: MachineCallback<T>; }
+export function MachineRule<T>(regexp: RegExp, callback: MachineCallback<T>): MachineRule<T> {
+  return [regexp, callback];
+}
 
 /**
 Every MachineState has:
