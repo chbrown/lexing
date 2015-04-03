@@ -222,6 +222,7 @@ var BufferedFileReader = (function () {
         while (predicate(this._buffer)) {
             var EOF = this._fillBuffer(this._block_size);
             if (EOF) {
+                // exit regardless
                 break;
             }
         }
@@ -471,4 +472,54 @@ var CombinerIterator = (function () {
     };
     return CombinerIterator;
 })();
+/**
+Every MachineState has:
+
+* value: I
+  An internal value, which is incrementally built based on the input.
+* read(): T
+  This derives a value of type T from the input.
+* rules: MachineRule[]
+  Each MachineRule maps a string pattern to an instance method, which returns
+  a value of type T (or null). If a rule matches the input and the corresponding
+  instance method returns a non-null value, we should exit (pop) this state by
+  returning from read().
+
+`T` is the result Type
+`I` is the internal Type
+*/
+var MachineState = (function () {
+    function MachineState(iterable) {
+        this.iterable = iterable;
+    }
+    // generic callbacks
+    MachineState.prototype.pop = function () {
+        return this.value;
+    };
+    MachineState.prototype.ignore = function () {
+        return undefined;
+    };
+    MachineState.prototype.read = function () {
+        var input = this.iterable.peek(64);
+        for (var i = 0, rule; (rule = this.rules[i]); i++) {
+            var match = input.match(rule[0]);
+            if (match) {
+                // advance the input tape over the matched input
+                this.iterable.skip(match[0].length);
+                // apply the matched transition
+                var result = rule[1].call(this, match);
+                if (result !== undefined) {
+                    return result;
+                }
+                else {
+                    return this.read();
+                }
+            }
+        }
+        var message = "Invalid language; could not find a match in input \"" + input + "\"";
+        throw new Error(message);
+    };
+    return MachineState;
+})();
+exports.MachineState = MachineState;
 //// }

@@ -252,4 +252,36 @@ declare module "lexing" {
         findRule(name: string): CombinerRule<T, T>;
         map(iterable: TokenIterable<T>, stack?: Array<Array<Token<T>>>): TokenIterable<T>;
     }
+    interface MachineCallback<T> {
+        (match?: RegExpMatchArray): T;
+    }
+    interface MachineRule<T> extends Array<RegExp | MachineCallback<T>> {
+        0: RegExp;
+        1: MachineCallback<T>;
+    }
+    /**
+    Every MachineState has:
+    
+    * value: I
+      An internal value, which is incrementally built based on the input.
+    * read(): T
+      This derives a value of type T from the input.
+    * rules: MachineRule[]
+      Each MachineRule maps a string pattern to an instance method, which returns
+      a value of type T (or null). If a rule matches the input and the corresponding
+      instance method returns a non-null value, we should exit (pop) this state by
+      returning from read().
+    
+    `T` is the result Type
+    `I` is the internal Type
+    */
+    class MachineState<T, I> {
+        protected iterable: StringIterable;
+        protected value: I;
+        protected rules: MachineRule<T>[];
+        constructor(iterable: StringIterable);
+        pop(): T;
+        ignore(): T;
+        read(): T;
+    }
 }

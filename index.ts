@@ -517,4 +517,64 @@ class CombinerIterator<T> implements TokenIterable<T> {
   }
 }
 
+// -----------------------------------------------------------------------------
+//                 Object-oriented Stack-driven State Machine
+
+export interface MachineCallback<T> { (match?: RegExpMatchArray): T }
+// type MachineRule<T> = [RegExp, MachineCallback<T>] // unfortunately doesn't work
+export interface MachineRule<T> extends Array<RegExp | MachineCallback<T>> { 0: RegExp; 1: MachineCallback<T>; }
+
+/**
+Every MachineState has:
+
+* value: I
+  An internal value, which is incrementally built based on the input.
+* read(): T
+  This derives a value of type T from the input.
+* rules: MachineRule[]
+  Each MachineRule maps a string pattern to an instance method, which returns
+  a value of type T (or null). If a rule matches the input and the corresponding
+  instance method returns a non-null value, we should exit (pop) this state by
+  returning from read().
+
+`T` is the result Type
+`I` is the internal Type
+*/
+export class MachineState<T, I> {
+  protected value: I;
+  protected rules: MachineRule<T>[];
+  constructor(protected iterable: StringIterable) { }
+
+  // generic callbacks
+  pop(): T {
+    return <any>this.value;
+  }
+  ignore(): T {
+    return undefined;
+  }
+
+  read(): T {
+    var input = this.iterable.peek(64);
+
+    for (var i = 0, rule: MachineRule<T>; (rule = this.rules[i]); i++) {
+      var match = input.match(rule[0]);
+      if (match) {
+        // advance the input tape over the matched input
+        this.iterable.skip(match[0].length);
+        // apply the matched transition
+        var result = rule[1].call(this, match);
+        if (result !== undefined) {
+          return result;
+        }
+        else {
+          return this.read();
+        }
+      }
+    }
+
+    var message = `Invalid language; could not find a match in input "${input}"`;
+    throw new Error(message);
+  }
+}
+
 //// }
