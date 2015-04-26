@@ -516,24 +516,36 @@ var MachineState = (function () {
         return new SubState(this.iterable, this.peek_length);
     };
     MachineState.prototype.read = function () {
-        var input = this.iterable.peek(this.peek_length);
-        for (var i = 0, rule; (rule = this.rules[i]); i++) {
-            var match = input.match(rule[0]);
-            if (match) {
-                // advance the input tape over the matched input
-                this.iterable.skip(match[0].length);
-                // apply the matched transition
-                var result = rule[1].call(this, match);
-                if (result !== undefined) {
-                    return result;
-                }
-                else {
-                    return this.read();
+        while (1) {
+            var input = this.iterable.peek(this.peek_length);
+            var match;
+            for (var i = 0, rule; (rule = this.rules[i]); i++) {
+                // rule[0] is the RegExp; rule[1] is the instance method to call on success
+                match = input.match(rule[0]);
+                if (match !== null) {
+                    // advance the input tape over the matched input
+                    this.iterable.skip(match[0].length);
+                    // apply the matched transition
+                    var result = rule[1].call(this, match);
+                    if (result !== undefined) {
+                        return result;
+                    }
+                    if (input.length === 0) {
+                        throw new Error("EOF reached without termination; cannot continue");
+                    }
+                    if (match[0].length === 0) {
+                        throw new Error("0-width match found without termination; cannot continue");
+                    }
+                    // break out of the for loop while match is still defined
+                    break;
                 }
             }
+            // If at some point in the input iterable we run through all the patterns
+            // and none of them match, we cannot proceed further.
+            if (match === null) {
+                throw new Error("Invalid language; could not find a match in input \"" + input + "\" for state \"" + this.name + "\"");
+            }
         }
-        var message = "Invalid language; could not find a match in input \"" + input + "\"";
-        throw new Error(message);
     };
     return MachineState;
 })();
