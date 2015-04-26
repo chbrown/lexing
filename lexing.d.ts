@@ -285,6 +285,7 @@ declare module "lexing" {
         protected value: I;
         protected rules: MachineRule<T>[];
         constructor(iterable: StringIterable, peek_length?: number);
+        private name;
         pop(): T;
         ignore(): T;
         attachState<SubT, SubI>(SubState: MachineStateConstructor<SubT, SubI>): MachineState<SubT, SubI>;

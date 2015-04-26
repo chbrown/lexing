@@ -552,6 +552,10 @@ export class MachineState<T, I> {
   constructor(protected iterable: StringIterable,
               protected peek_length: number = 256) { }
 
+  private get name(): string {
+    return this.constructor['name'];
+  }
+
   // generic callbacks
   pop(): T {
     return <any>this.value;

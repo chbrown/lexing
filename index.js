@@ -498,6 +498,13 @@ var MachineState = (function () {
         this.iterable = iterable;
         this.peek_length = peek_length;
     }
+    Object.defineProperty(MachineState.prototype, "name", {
+        get: function () {
+            return this.constructor['name'];
+        },
+        enumerable: true,
+        configurable: true
+    });
     // generic callbacks
     MachineState.prototype.pop = function () {
         return this.value;
