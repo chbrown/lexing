@@ -493,8 +493,10 @@ Every MachineState has:
 `I` is the internal Type
 */
 var MachineState = (function () {
-    function MachineState(iterable) {
+    function MachineState(iterable, peek_length) {
+        if (peek_length === void 0) { peek_length = 256; }
         this.iterable = iterable;
+        this.peek_length = peek_length;
     }
     // generic callbacks
     MachineState.prototype.pop = function () {
@@ -503,8 +505,11 @@ var MachineState = (function () {
     MachineState.prototype.ignore = function () {
         return undefined;
     };
+    MachineState.prototype.attachState = function (SubState) {
+        return new SubState(this.iterable, this.peek_length);
+    };
     MachineState.prototype.read = function () {
-        var input = this.iterable.peek(64);
+        var input = this.iterable.peek(this.peek_length);
         for (var i = 0, rule; (rule = this.rules[i]); i++) {
             var match = input.match(rule[0]);
             if (match) {

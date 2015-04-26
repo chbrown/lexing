@@ -526,6 +526,9 @@ export interface MachineRule<T> extends Array<RegExp | MachineCallback<T>> { 0: 
 export function MachineRule<T>(regexp: RegExp, callback: MachineCallback<T>): MachineRule<T> {
   return [regexp, callback];
 }
+export interface MachineStateConstructor<T, I> {
+  new(iterable: StringIterable, peek_length?: number): MachineState<T, I>;
+}
 
 /**
 Every MachineState has:
@@ -546,7 +549,8 @@ Every MachineState has:
 export class MachineState<T, I> {
   protected value: I;
   protected rules: MachineRule<T>[];
-  constructor(protected iterable: StringIterable) { }
+  constructor(protected iterable: StringIterable,
+              protected peek_length: number = 256) { }
 
   // generic callbacks
   pop(): T {
@@ -556,8 +560,12 @@ export class MachineState<T, I> {
     return undefined;
   }
 
+  attachState<SubT, SubI>(SubState: MachineStateConstructor<SubT, SubI>): MachineState<SubT, SubI> {
+    return new SubState(this.iterable, this.peek_length);
+  }
+
   read(): T {
-    var input = this.iterable.peek(64);
+    var input = this.iterable.peek(this.peek_length);
 
     for (var i = 0, rule: MachineRule<T>; (rule = this.rules[i]); i++) {
       var match = input.match(rule[0]);

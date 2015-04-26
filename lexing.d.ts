@@ -260,6 +260,9 @@ declare module "lexing" {
         1: MachineCallback<T>;
     }
     function MachineRule<T>(regexp: RegExp, callback: MachineCallback<T>): MachineRule<T>;
+    interface MachineStateConstructor<T, I> {
+        new (iterable: StringIterable, peek_length?: number): MachineState<T, I>;
+    }
     /**
     Every MachineState has:
     
@@ -278,11 +281,13 @@ declare module "lexing" {
     */
     class MachineState<T, I> {
         protected iterable: StringIterable;
+        protected peek_length: number;
         protected value: I;
         protected rules: MachineRule<T>[];
-        constructor(iterable: StringIterable);
+        constructor(iterable: StringIterable, peek_length?: number);
         pop(): T;
         ignore(): T;
+        attachState<SubT, SubI>(SubState: MachineStateConstructor<SubT, SubI>): MachineState<SubT, SubI>;
         read(): T;
     }
 }
