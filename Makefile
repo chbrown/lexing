@@ -28,3 +28,6 @@ lexing.d.ts: index.ts type_declarations
 .PHONY: test
 test: index.js test/simple.js node_modules/.bin/mocha
 	node_modules/.bin/mocha --recursive test/
+
+dev: node_modules/.bin/tsc
+	node_modules/.bin/tsc -m commonjs -t ES5 -w index.ts
