@@ -533,9 +533,6 @@ var MachineState = (function () {
                     if (input.length === 0) {
                         throw new Error("EOF reached without termination; cannot continue");
                     }
-                    if (match[0].length === 0) {
-                        throw new Error("0-width match found without termination; cannot continue");
-                    }
                     // break out of the for loop while match is still defined
                     break;
                 }
