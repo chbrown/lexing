@@ -1,5 +1,24 @@
-/// <reference path="../../type_declarations/DefinitelyTyped/node/node.d.ts" />
 declare module "lexing" {
+    /**
+    Very trimmed-down version of Node's Buffer.
+    */
+    interface Buffer {
+        toString(encoding?: string, start?: number, end?: number): string;
+        slice(start?: number, end?: number): Buffer;
+        length: number;
+    }
+    interface Source {
+        /**
+        Read `length` bytes from the underlying source starting from `position`,
+        into the given `buffer` starting at `offset`, returning the number of bytes
+        read.
+        */
+        read(buffer: Buffer, offset: number, length: number, position: number): number;
+        /**
+        Return the total number of bytes in the underlying source.
+        */
+        size: number;
+    }
     /**
     Any sort of sequence can implement Iterable<T>. It's a lot like Array<T>, but
     read-only, and without random access.
@@ -118,15 +137,15 @@ declare module "lexing" {
     calling `read(small_number)` repeatedly will issue a `read(2)` system call only
     when the buffer doesn't have enough data.
     
-    When calling `read()` on the underlying file, it will read batches of
+    When calling `read()` on the underlying file, it will read in batches of
     `_block_size` (default: 1024) bytes.
     */
-    class BufferedFileReader {
-        private _fd;
+    class BufferedSourceReader {
+        private _source;
         private _position;
         private _block_size;
         protected _buffer: Buffer;
-        constructor(_fd: number, _position?: number, _block_size?: number);
+        constructor(_source: Source, _position?: number, _block_size?: number);
         /**
         Return the position in the file that would be read from if we called
         read(...). This is different from the internally-held position, which
@@ -155,8 +174,8 @@ declare module "lexing" {
         */
         protected _readWhile(predicate: (buffer: Buffer) => boolean): void;
     }
-    class FileBufferIterator extends BufferedFileReader implements BufferIterable {
-        constructor(_fd: number, _position?: number, _block_size?: number);
+    class SourceBufferIterator extends BufferedSourceReader implements BufferIterable {
+        constructor(source: Source, position?: number, block_size?: number);
         private _ensureLength(length);
         next(length: number): Buffer;
         peek(length: number): Buffer;
@@ -166,9 +185,9 @@ declare module "lexing" {
         */
         skip(length: number): number;
     }
-    class FileStringIterator extends BufferedFileReader implements StringIterable {
+    class SourceStringIterator extends BufferedSourceReader implements StringIterable {
         private _encoding;
-        constructor(_fd: number, _encoding: string, _position?: number, _block_size?: number);
+        constructor(source: Source, _encoding: string, position?: number, block_size?: number);
         private _ensureLength(length);
         next(length: number): string;
         peek(length: number): string;

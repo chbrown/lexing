@@ -1,7 +1,32 @@
-/// <reference path="type_declarations/DefinitelyTyped/node/node.d.ts" />
-import fs = require('fs');
+//// module lexing {
 
-//// export module lexing {
+/**
+Very trimmed-down version of Node's Buffer.
+*/
+export interface Buffer {
+  toString(encoding?: string, start?: number, end?: number): string;
+  slice(start?: number, end?: number): Buffer;
+  length: number;
+}
+declare var Buffer: {
+  new (str: string, encoding?: string): Buffer;
+  new (size: number): Buffer;
+  byteLength(string: string, encoding?: string): number;
+  concat(list: Buffer[], totalLength?: number): Buffer;
+};
+
+export interface Source {
+  /**
+  Read `length` bytes from the underlying source starting from `position`,
+  into the given `buffer` starting at `offset`, returning the number of bytes
+  read.
+  */
+  read(buffer: Buffer, offset: number, length: number, position: number): number;
+  /**
+  Return the total number of bytes in the underlying source.
+  */
+  size: number;
+}
 
 // #############################################################################
 //                                 ITERABLES
@@ -185,14 +210,16 @@ triggering a `read(2)` system call on the underlying file each time. Likewise,
 calling `read(small_number)` repeatedly will issue a `read(2)` system call only
 when the buffer doesn't have enough data.
 
-When calling `read()` on the underlying file, it will read batches of
+When calling `read()` on the underlying file, it will read in batches of
 `_block_size` (default: 1024) bytes.
 */
-export class BufferedFileReader {
+export class BufferedSourceReader {
   protected _buffer: Buffer = new Buffer(0);
 
-  // when reading more data, pull in chunks of `_block_size` bytes.
-  constructor(private _fd: number, private _position = 0, private _block_size = 1024) { }
+  // when reading more data, pull in chunks of `block_size` bytes.
+  constructor(private _source: Source,
+              private _position = 0,
+              private _block_size = 1024) { }
 
   /**
   Return the position in the file that would be read from if we called
@@ -207,7 +234,7 @@ export class BufferedFileReader {
   Return the total size (in bytes) of the underlying file.
   */
   get size(): number {
-    return fs.fstatSync(this._fd).size;
+    return this._source.size;
   }
 
   /**
@@ -219,7 +246,7 @@ export class BufferedFileReader {
   private _fillBuffer(length: number): boolean {
     var buffer = new Buffer(length);
     // always read from the current position
-    var bytesRead = fs.readSync(this._fd, buffer, 0, length, this._position);
+    var bytesRead = this._source.read(buffer, 0, length, this._position);
     // and update it accordingly
     this._position += bytesRead;
     // use the Buffer.concat totalLength argument to slice the fresh buffer if needed
@@ -247,9 +274,9 @@ export class BufferedFileReader {
   }
 }
 
-export class FileBufferIterator extends BufferedFileReader implements BufferIterable {
-  constructor(_fd: number, _position = 0, _block_size = 1024) {
-    super(_fd, _position, _block_size);
+export class SourceBufferIterator extends BufferedSourceReader implements BufferIterable {
+  constructor(source: Source, position = 0, block_size = 1024) {
+    super(source, position, block_size);
   }
 
   private _ensureLength(length: number): void {
@@ -275,16 +302,16 @@ export class FileBufferIterator extends BufferedFileReader implements BufferIter
   */
   skip(length: number): number {
     this._ensureLength(length);
-    // we cannot skip more than `this.buffer.length` bytes
+    // we cannot skip more than `this._buffer.length` bytes
     var bytesSkipped = Math.min(length, this._buffer.length);
     this._buffer = this._buffer.slice(length);
     return bytesSkipped;
   }
 }
 
-export class FileStringIterator extends BufferedFileReader implements StringIterable {
-  constructor(_fd: number, private _encoding: string, _position = 0, _block_size = 1024) {
-    super(_fd, _position, _block_size);
+export class SourceStringIterator extends BufferedSourceReader implements StringIterable {
+  constructor(source: Source, private _encoding: string, position = 0, block_size = 1024) {
+    super(source, position, block_size);
   }
 
   private _ensureLength(length: number): void {
@@ -594,7 +621,8 @@ export class MachineState<T, I> {
       // If at some point in the input iterable we run through all the patterns
       // and none of them match, we cannot proceed further.
       if (match === null) {
-        throw new Error(`Invalid language; could not find a match in input "${input}" for state "${this.name}"`);
+        var clean_input = input.slice(0, 128).replace(/\r\n|\r/g, '\n').replace(/\t|\v|\f/g, ' ').replace(/\0|\b/g, '');
+        throw new Error(`Invalid language; could not find a match in input "${clean_input}" for state "${this.name}"`);
       }
     }
   }

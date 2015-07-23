@@ -1,11 +1,10 @@
+//// module lexing {
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-/// <reference path="type_declarations/DefinitelyTyped/node/node.d.ts" />
-var fs = require('fs');
 /**
 Wraps a Buffer as a stateful iterable.
 */
@@ -158,20 +157,20 @@ triggering a `read(2)` system call on the underlying file each time. Likewise,
 calling `read(small_number)` repeatedly will issue a `read(2)` system call only
 when the buffer doesn't have enough data.
 
-When calling `read()` on the underlying file, it will read batches of
+When calling `read()` on the underlying file, it will read in batches of
 `_block_size` (default: 1024) bytes.
 */
-var BufferedFileReader = (function () {
-    // when reading more data, pull in chunks of `_block_size` bytes.
-    function BufferedFileReader(_fd, _position, _block_size) {
+var BufferedSourceReader = (function () {
+    // when reading more data, pull in chunks of `block_size` bytes.
+    function BufferedSourceReader(_source, _position, _block_size) {
         if (_position === void 0) { _position = 0; }
         if (_block_size === void 0) { _block_size = 1024; }
-        this._fd = _fd;
+        this._source = _source;
         this._position = _position;
         this._block_size = _block_size;
         this._buffer = new Buffer(0);
     }
-    Object.defineProperty(BufferedFileReader.prototype, "position", {
+    Object.defineProperty(BufferedSourceReader.prototype, "position", {
         /**
         Return the position in the file that would be read from if we called
         read(...). This is different from the internally-held position, which
@@ -183,12 +182,12 @@ var BufferedFileReader = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(BufferedFileReader.prototype, "size", {
+    Object.defineProperty(BufferedSourceReader.prototype, "size", {
         /**
         Return the total size (in bytes) of the underlying file.
         */
         get: function () {
-            return fs.fstatSync(this._fd).size;
+            return this._source.size;
         },
         enumerable: true,
         configurable: true
@@ -199,10 +198,10 @@ var BufferedFileReader = (function () {
     Returns false if the read operation reads fewer than the requested bytes,
     usually signifying that EOF has been reached.
     */
-    BufferedFileReader.prototype._fillBuffer = function (length) {
+    BufferedSourceReader.prototype._fillBuffer = function (length) {
         var buffer = new Buffer(length);
         // always read from the current position
-        var bytesRead = fs.readSync(this._fd, buffer, 0, length, this._position);
+        var bytesRead = this._source.read(buffer, 0, length, this._position);
         // and update it accordingly
         this._position += bytesRead;
         // use the Buffer.concat totalLength argument to slice the fresh buffer if needed
@@ -218,7 +217,7 @@ var BufferedFileReader = (function () {
     This may return without the condition being met, if the end of the underlying
     file has been reached.
     */
-    BufferedFileReader.prototype._readWhile = function (predicate) {
+    BufferedSourceReader.prototype._readWhile = function (predicate) {
         while (predicate(this._buffer)) {
             var EOF = this._fillBuffer(this._block_size);
             if (EOF) {
@@ -227,28 +226,28 @@ var BufferedFileReader = (function () {
             }
         }
     };
-    return BufferedFileReader;
+    return BufferedSourceReader;
 })();
-exports.BufferedFileReader = BufferedFileReader;
-var FileBufferIterator = (function (_super) {
-    __extends(FileBufferIterator, _super);
-    function FileBufferIterator(_fd, _position, _block_size) {
-        if (_position === void 0) { _position = 0; }
-        if (_block_size === void 0) { _block_size = 1024; }
-        _super.call(this, _fd, _position, _block_size);
+exports.BufferedSourceReader = BufferedSourceReader;
+var SourceBufferIterator = (function (_super) {
+    __extends(SourceBufferIterator, _super);
+    function SourceBufferIterator(source, position, block_size) {
+        if (position === void 0) { position = 0; }
+        if (block_size === void 0) { block_size = 1024; }
+        _super.call(this, source, position, block_size);
     }
-    FileBufferIterator.prototype._ensureLength = function (length) {
+    SourceBufferIterator.prototype._ensureLength = function (length) {
         var _this = this;
         // all the action happens only if we need more bytes than are in the buffer
         this._readWhile(function () { return length > _this._buffer.length; });
     };
-    FileBufferIterator.prototype.next = function (length) {
+    SourceBufferIterator.prototype.next = function (length) {
         this._ensureLength(length);
         var buffer = this._buffer.slice(0, length);
         this._buffer = this._buffer.slice(length);
         return buffer;
     };
-    FileBufferIterator.prototype.peek = function (length) {
+    SourceBufferIterator.prototype.peek = function (length) {
         this._ensureLength(length);
         return this._buffer.slice(0, length);
     };
@@ -256,30 +255,30 @@ var FileBufferIterator = (function (_super) {
     Skip over the next `length` bytes, returning the number of skipped
     bytes (which may be < `length` iff EOF has been reached).
     */
-    FileBufferIterator.prototype.skip = function (length) {
+    SourceBufferIterator.prototype.skip = function (length) {
         this._ensureLength(length);
-        // we cannot skip more than `this.buffer.length` bytes
+        // we cannot skip more than `this._buffer.length` bytes
         var bytesSkipped = Math.min(length, this._buffer.length);
         this._buffer = this._buffer.slice(length);
         return bytesSkipped;
     };
-    return FileBufferIterator;
-})(BufferedFileReader);
-exports.FileBufferIterator = FileBufferIterator;
-var FileStringIterator = (function (_super) {
-    __extends(FileStringIterator, _super);
-    function FileStringIterator(_fd, _encoding, _position, _block_size) {
-        if (_position === void 0) { _position = 0; }
-        if (_block_size === void 0) { _block_size = 1024; }
-        _super.call(this, _fd, _position, _block_size);
+    return SourceBufferIterator;
+})(BufferedSourceReader);
+exports.SourceBufferIterator = SourceBufferIterator;
+var SourceStringIterator = (function (_super) {
+    __extends(SourceStringIterator, _super);
+    function SourceStringIterator(source, _encoding, position, block_size) {
+        if (position === void 0) { position = 0; }
+        if (block_size === void 0) { block_size = 1024; }
+        _super.call(this, source, position, block_size);
         this._encoding = _encoding;
     }
-    FileStringIterator.prototype._ensureLength = function (length) {
+    SourceStringIterator.prototype._ensureLength = function (length) {
         var _this = this;
         // TODO: count characters without reencoding
         this._readWhile(function () { return length > _this._buffer.toString(_this._encoding).length; });
     };
-    FileStringIterator.prototype.next = function (length) {
+    SourceStringIterator.prototype.next = function (length) {
         // TODO: don't re-encode the whole string and then only use a tiny bit of it
         this._ensureLength(length);
         var str = this._buffer.toString(this._encoding).slice(0, length);
@@ -287,7 +286,7 @@ var FileStringIterator = (function (_super) {
         this._buffer = this._buffer.slice(byteLength);
         return str;
     };
-    FileStringIterator.prototype.peek = function (length) {
+    SourceStringIterator.prototype.peek = function (length) {
         // TODO (see TODO in next())
         this._ensureLength(length);
         return this._buffer.toString(this._encoding).slice(0, length);
@@ -296,7 +295,7 @@ var FileStringIterator = (function (_super) {
     Skip over the next `length` characters, returning the number of skipped
     characters (which may be < `length` iff EOF has been reached).
     */
-    FileStringIterator.prototype.skip = function (length) {
+    SourceStringIterator.prototype.skip = function (length) {
         // TODO (see TODO in next())
         this._ensureLength(length);
         var consumed_string = this._buffer.toString(this._encoding).slice(0, length);
@@ -309,25 +308,25 @@ var FileStringIterator = (function (_super) {
     /**
     Provide raw Buffer-level access, too.
     */
-    FileStringIterator.prototype.nextBytes = function (length) {
+    SourceStringIterator.prototype.nextBytes = function (length) {
         this._ensureLength(length);
         var buffer = this._buffer.slice(0, length);
         this._buffer = this._buffer.slice(length);
         return buffer;
     };
-    FileStringIterator.prototype.peekBytes = function (length) {
+    SourceStringIterator.prototype.peekBytes = function (length) {
         this._ensureLength(length);
         return this._buffer.slice(0, length);
     };
-    FileStringIterator.prototype.skipBytes = function (length) {
+    SourceStringIterator.prototype.skipBytes = function (length) {
         this._ensureLength(length);
         var bytesSkipped = Math.min(length, this._buffer.length);
         this._buffer = this._buffer.slice(length);
         return bytesSkipped;
     };
-    return FileStringIterator;
-})(BufferedFileReader);
-exports.FileStringIterator = FileStringIterator;
+    return SourceStringIterator;
+})(BufferedSourceReader);
+exports.SourceStringIterator = SourceStringIterator;
 function Token(name, value) {
     if (value === void 0) { value = null; }
     return { name: name, value: value };
@@ -540,7 +539,8 @@ var MachineState = (function () {
             // If at some point in the input iterable we run through all the patterns
             // and none of them match, we cannot proceed further.
             if (match === null) {
-                throw new Error("Invalid language; could not find a match in input \"" + input + "\" for state \"" + this.name + "\"");
+                var clean_input = input.slice(0, 128).replace(/\r\n|\r/g, '\n').replace(/\t|\v|\f/g, ' ').replace(/\0|\b/g, '');
+                throw new Error("Invalid language; could not find a match in input \"" + clean_input + "\" for state \"" + this.name + "\"");
             }
         }
     };
