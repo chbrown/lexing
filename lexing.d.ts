@@ -3,6 +3,8 @@ declare module "lexing" {
     Very trimmed-down version of Node's Buffer.
     */
     interface Buffer {
+        new (str: string, encoding?: string): Buffer;
+        new (size: number): Buffer;
         toString(encoding?: string, start?: number, end?: number): string;
         slice(start?: number, end?: number): Buffer;
         length: number;
@@ -14,6 +16,11 @@ declare module "lexing" {
         read.
         */
         read(buffer: Buffer, offset: number, length: number, position: number): number;
+        /**
+        Read `length` bytes of the underlying file as a Buffer. May return a
+        Buffer shorter than `length` iff EOF has been reached.
+        */
+        readBuffer(length: number, position: number): Buffer;
         /**
         Return the total number of bytes in the underlying source.
         */

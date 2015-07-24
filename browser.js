@@ -17,6 +17,17 @@ var ArrayBufferSource = (function () {
         }
         return length;
     };
+    /**
+    Same as FileSystemSource#readBuffer
+    */
+    ArrayBufferSource.prototype.readBuffer = function (length, position) {
+        var buffer = new Buffer(length);
+        var bytesRead = this.read(buffer, 0, length, position);
+        if (bytesRead < length) {
+            buffer = buffer.slice(0, bytesRead);
+        }
+        return buffer;
+    };
     return ArrayBufferSource;
 })();
 exports.ArrayBufferSource = ArrayBufferSource;

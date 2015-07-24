@@ -19,8 +19,7 @@ lexing.d.ts: index.ts
 	sed 's:^//// ::g' $< > module.ts
 	$(BIN)/tsc --module commonjs --target ES5 --declaration module.ts
 	# change the module name to a string,
-	cat module.d.ts | \
-		sed 's:declare module lexing:declare module "lexing":' > $@
+	sed 's:export declare module lexing:declare module "lexing":' <module.d.ts >$@
 	# cleanup
 	rm module.{ts,d.ts,js}
 

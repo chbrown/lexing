@@ -32,12 +32,12 @@ var FileSystemSource = (function () {
         return fs_1.readSync(this.fd, buffer, offset, length, position);
     };
     /**
-    Read a `length` bytes of the underlying file as a Buffer. May return a
+    Read `length` bytes of the underlying file as a Buffer. May return a
     Buffer shorter than `length` iff EOF has been reached.
     */
     FileSystemSource.prototype.readBuffer = function (length, position) {
         var buffer = new Buffer(length);
-        var bytesRead = this.read(buffer, 0, length, position);
+        var bytesRead = fs_1.readSync(this.fd, buffer, 0, length, position);
         if (bytesRead < length) {
             buffer = buffer.slice(0, bytesRead);
         }
