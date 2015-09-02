@@ -99,7 +99,7 @@ declare module "lexing" {
         private _string;
         position: number;
         constructor(_string: string, position?: number);
-        static fromBuffer(buffer: Buffer, encoding?: string): StringIterator;
+        static fromBuffer(buffer: Buffer, encoding?: string, start?: number, end?: number): StringIterator;
         /**
         Return the total length of the underlying Buffer.
         */
