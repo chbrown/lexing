@@ -134,8 +134,8 @@ Wraps a string as a stateful iterable.
 export class StringIterator implements StringIterable {
   constructor(private _string: string, public position = 0) { }
 
-  static fromBuffer(buffer: Buffer, encoding?: string): StringIterator {
-    var str = buffer.toString(encoding);
+  static fromBuffer(buffer: Buffer, encoding?: string, start?: number, end?: number): StringIterator {
+    var str = buffer.toString(encoding, start, end);
     return new StringIterator(str);
   }
 

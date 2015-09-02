@@ -2,8 +2,7 @@
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 /**
 Wraps a Buffer as a stateful iterable.
@@ -71,8 +70,8 @@ var StringIterator = (function () {
         this._string = _string;
         this.position = position;
     }
-    StringIterator.fromBuffer = function (buffer, encoding) {
-        var str = buffer.toString(encoding);
+    StringIterator.fromBuffer = function (buffer, encoding, start, end) {
+        var str = buffer.toString(encoding, start, end);
         return new StringIterator(str);
     };
     Object.defineProperty(StringIterator.prototype, "size", {

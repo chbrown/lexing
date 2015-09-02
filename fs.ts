@@ -37,6 +37,9 @@ export class FileSystemSource implements Source {
   */
   readBuffer(length: number, position: number): LexingBuffer {
     var buffer = new Buffer(length);
+    if (length === 0) {
+      return buffer;
+    }
     var bytesRead = readSync(this.fd, buffer, 0, length, position);
     if (bytesRead < length) {
       buffer = buffer.slice(0, bytesRead);

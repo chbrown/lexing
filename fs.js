@@ -37,6 +37,9 @@ var FileSystemSource = (function () {
     */
     FileSystemSource.prototype.readBuffer = function (length, position) {
         var buffer = new Buffer(length);
+        if (length === 0) {
+            return buffer;
+        }
         var bytesRead = fs_1.readSync(this.fd, buffer, 0, length, position);
         if (bytesRead < length) {
             buffer = buffer.slice(0, bytesRead);
