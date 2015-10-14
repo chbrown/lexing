@@ -2,8 +2,7 @@
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 /**
 Wraps a Buffer as a stateful iterable.
@@ -297,11 +296,16 @@ var SourceStringIterator = (function (_super) {
     */
     SourceStringIterator.prototype.skip = function (length) {
         // TODO (see TODO in next())
+        // _ensureLength(length) ensures that our subsequent call to toString() will
+        // return a string that is at least `length` long.
         this._ensureLength(length);
         var consumed_string = this._buffer.toString(this._encoding).slice(0, length);
+        // even though we know we consumed (at least) `length` number of characters,
+        // we also need to know exactly how long that string is in bytes, in order
+        // to advance the underlying buffer appropriately
         var byteLength = Buffer.byteLength(consumed_string, this._encoding);
         // we cannot skip more than `this._buffer.length` bytes
-        var bytesSkipped = Math.min(byteLength, this._buffer.length);
+        // var bytesSkipped = Math.min(byteLength, this._buffer.length); // is this necessary?
         this._buffer = this._buffer.slice(byteLength);
         return consumed_string.length;
     };
