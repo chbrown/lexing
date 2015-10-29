@@ -7,12 +7,15 @@
     "parser"
   ],
   "homepage": "https://github.com/chbrown/lexing",
-  "repository": "git://github.com/chbrown/lexing.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chbrown/lexing.git"
+  },
   "license": "MIT",
   "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
   "devDependencies": {
     "mocha": "*",
-    "typescript": "*"
+    "typescript": "next"
   },
   "scripts": {
     "test": "make test"

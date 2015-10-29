@@ -1,5 +1,3 @@
-//// export module lexing {
-
 /**
 Very trimmed-down version of Node's Buffer.
 */
@@ -637,5 +635,3 @@ export class MachineState<T, I> {
     }
   }
 }
-
-//// }
