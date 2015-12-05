@@ -202,11 +202,8 @@ export class ArrayIterator<T> implements StatefulIterable<T> {
   }
 }
 
-// #############################################################################
-//                          SYNCHRONOUS FILE READER
-
 /**
-Provide iterative access to a file.
+Provide buffered access to a stream of bytes, e.g., a file.
 
 It is buffered, which means you can call `peek(same_number)` repeatedly without
 triggering a `read(2)` system call on the underlying file each time. Likewise,
@@ -225,16 +222,14 @@ export class BufferedSourceReader {
               private _block_size = 1024) { }
 
   /**
-  Return the position in the file that would be read from if we called
-  read(...). This is different from the internally-held position, which
-  points to the end of the currently held buffer.
+  @returns {number} The position (byte offset) in the file that would be read from if we called read(...). This is different from the internally-held position, which points to the end of the currently held buffer.
   */
   get position(): number {
     return this._position - this._buffer.length;
   }
 
   /**
-  Return the total size (in bytes) of the underlying file.
+  @returns {number} The total size (in bytes) of the underlying file.
   */
   get size(): number {
     return this._source.size;
@@ -243,8 +238,8 @@ export class BufferedSourceReader {
   /**
   Read data from the underlying file and append it to the buffer.
 
-  Returns false if the read operation reads fewer than the requested bytes,
-  usually signifying that EOF has been reached.
+  @param {number} length The number of bytes to consume and append to the buffer.
+  @returns {boolean} If the read operation reads fewer than the requested bytes, returns false, usually signifying that EOF has been reached. Returns true if it seems that there is more available data.
   */
   private _fillBuffer(length: number): boolean {
     var buffer = new Buffer(length);
@@ -263,8 +258,8 @@ export class BufferedSourceReader {
   repeatedly with no arguments. If it returns false the first time it is called,
   nothing will be read.
 
-  This may return without the condition being met, if the end of the underlying
-  file has been reached.
+  @param {Function} predicate A function that takes a Buffer and returns true if it's long enough.
+  @returns {void} This may return without the condition being met, if the end of the underlying file has been reached.
   */
   protected _readWhile(predicate: (buffer: Buffer) => boolean): void {
     while (predicate(this._buffer)) {
@@ -275,36 +270,35 @@ export class BufferedSourceReader {
       }
     }
   }
-}
 
-export class SourceBufferIterator extends BufferedSourceReader implements BufferIterable {
-  constructor(source: Source, position = 0, block_size = 1024) {
-    super(source, position, block_size);
-  }
+  /**
+  Read from the underlying source until we have at least `length` bytes in the buffer.
 
-  private _ensureLength(length: number): void {
-    // all the action happens only if we need more bytes than are in the buffer
+  @param {number} length The number of bytes to return without consuming. This is an upper bound, since the underlying source may contain fewer than the desired bytes.
+  */
+  protected _peekBytes(length: number): Buffer {
     this._readWhile(() => length > this._buffer.length);
-  }
-
-  next(length: number): Buffer {
-    this._ensureLength(length);
-    var buffer = this._buffer.slice(0, length);
-    this._buffer = this._buffer.slice(length);
-    return buffer;
-  }
-
-  peek(length: number): Buffer {
-    this._ensureLength(length);
     return this._buffer.slice(0, length);
   }
 
   /**
-  Skip over the next `length` bytes, returning the number of skipped
-  bytes (which may be < `length` iff EOF has been reached).
+  Like _peekBytes(length), but consumes the bytes, so that subsequent calls return subsequent chunks.
+
+  @param {number} length The number of bytes to return (upper bound).
   */
-  skip(length: number): number {
-    this._ensureLength(length);
+  protected _nextBytes(length: number): Buffer {
+    var buffer = this._peekBytes(length);
+    this._buffer = this._buffer.slice(length);
+    return buffer;
+  }
+
+  /**
+  Like _nextBytes(length), but doesn't ever slice off a buffer to hold the skipped bytes.
+
+  @param {number} length The number of bytes that were skipped (consumed without returning), which may be fewer than `length` iff EOF has been reached.
+  */
+  protected _skipBytes(length: number): number {
+    this._readWhile(() => length > this._buffer.length);
     // we cannot skip more than `this._buffer.length` bytes
     var bytesSkipped = Math.min(length, this._buffer.length);
     this._buffer = this._buffer.slice(length);
@@ -312,29 +306,40 @@ export class SourceBufferIterator extends BufferedSourceReader implements Buffer
   }
 }
 
+export class SourceBufferIterator extends BufferedSourceReader implements BufferIterable {
+  constructor(source: Source, position = 0, block_size = 1024) {
+    super(source, position, block_size);
+  }
+
+  next = this._nextBytes;
+  peek = this._peekBytes;
+  skip = this._skipBytes;
+}
+
 export class SourceStringIterator extends BufferedSourceReader implements StringIterable {
   constructor(source: Source, private _encoding: string, position = 0, block_size = 1024) {
     super(source, position, block_size);
   }
 
-  private _ensureLength(length: number): void {
-    // TODO: count characters without reencoding
+  peek(length: number): string {
+    // TODO: don't re-encode the whole string and then only use a tiny bit of it
+    // ensure that our subsequent call to toString() will
+    // return a string that is at least `length` long.
     this._readWhile(() => length > this._buffer.toString(this._encoding).length);
+    return this._buffer.toString(this._encoding).slice(0, length);
   }
 
   next(length: number): string {
-    // TODO: don't re-encode the whole string and then only use a tiny bit of it
-    this._ensureLength(length);
-    var str = this._buffer.toString(this._encoding).slice(0, length);
+    // TODO (see TODO in peek())
+    var str = this.peek(length);
+    // even though we know we consumed (at least) `length` number of characters,
+    // we also need to know exactly how long that string is in bytes, in order
+    // to advance the underlying buffer appropriately
     var byteLength = Buffer.byteLength(str, this._encoding);
+    // we cannot skip more than `this._buffer.length` bytes
+    // var bytesSkipped = Math.min(byteLength, this._buffer.length); // is this necessary?
     this._buffer = this._buffer.slice(byteLength);
     return str;
-  }
-
-  peek(length: number): string {
-    // TODO (see TODO in next())
-    this._ensureLength(length);
-    return this._buffer.toString(this._encoding).slice(0, length);
   }
 
   /**
@@ -343,40 +348,14 @@ export class SourceStringIterator extends BufferedSourceReader implements String
   */
   skip(length: number): number {
     // TODO (see TODO in next())
-    // _ensureLength(length) ensures that our subsequent call to toString() will
-    // return a string that is at least `length` long.
-    this._ensureLength(length);
-    var consumed_string = this._buffer.toString(this._encoding).slice(0, length);
-    // even though we know we consumed (at least) `length` number of characters,
-    // we also need to know exactly how long that string is in bytes, in order
-    // to advance the underlying buffer appropriately
-    var byteLength = Buffer.byteLength(consumed_string, this._encoding);
-    // we cannot skip more than `this._buffer.length` bytes
-    // var bytesSkipped = Math.min(byteLength, this._buffer.length); // is this necessary?
-    this._buffer = this._buffer.slice(byteLength);
+    var consumed_string = this.next(length);
     return consumed_string.length;
   }
 
-  /**
-  Provide raw Buffer-level access, too.
-  */
-  nextBytes(length: number): Buffer {
-    this._ensureLength(length);
-    var buffer = this._buffer.slice(0, length);
-    this._buffer = this._buffer.slice(length);
-    return buffer;
-  }
-  peekBytes(length: number): Buffer {
-    this._ensureLength(length);
-    return this._buffer.slice(0, length);
-  }
-  skipBytes(length: number): number {
-    this._ensureLength(length);
-    var bytesSkipped = Math.min(length, this._buffer.length);
-    this._buffer = this._buffer.slice(length);
-    return bytesSkipped;
-  }
-
+  // Provide raw Buffer-level access, too, beyond/outside the StringIterable interface.
+  nextBytes = this._nextBytes;
+  peekBytes = this._peekBytes;
+  skipBytes = this._skipBytes;
 }
 
 // #############################################################################

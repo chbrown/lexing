@@ -134,7 +134,7 @@ export declare class ArrayIterator<T> implements StatefulIterable<T> {
     skip(): boolean;
 }
 /**
-Provide iterative access to a file.
+Provide buffered access to a stream of bytes, e.g., a file.
 
 It is buffered, which means you can call `peek(same_number)` repeatedly without
 triggering a `read(2)` system call on the underlying file each time. Likewise,
@@ -151,20 +151,18 @@ export declare class BufferedSourceReader {
     protected _buffer: Buffer;
     constructor(_source: Source, _position?: number, _block_size?: number);
     /**
-    Return the position in the file that would be read from if we called
-    read(...). This is different from the internally-held position, which
-    points to the end of the currently held buffer.
+    @returns {number} The position (byte offset) in the file that would be read from if we called read(...). This is different from the internally-held position, which points to the end of the currently held buffer.
     */
     position: number;
     /**
-    Return the total size (in bytes) of the underlying file.
+    @returns {number} The total size (in bytes) of the underlying file.
     */
     size: number;
     /**
     Read data from the underlying file and append it to the buffer.
   
-    Returns false if the read operation reads fewer than the requested bytes,
-    usually signifying that EOF has been reached.
+    @param {number} length The number of bytes to consume and append to the buffer.
+    @returns {boolean} If the read operation reads fewer than the requested bytes, returns false, usually signifying that EOF has been reached. Returns true if it seems that there is more available data.
     */
     private _fillBuffer(length);
     /**
@@ -173,39 +171,48 @@ export declare class BufferedSourceReader {
     repeatedly with no arguments. If it returns false the first time it is called,
     nothing will be read.
   
-    This may return without the condition being met, if the end of the underlying
-    file has been reached.
+    @param {Function} predicate A function that takes a Buffer and returns true if it's long enough.
+    @returns {void} This may return without the condition being met, if the end of the underlying file has been reached.
     */
     protected _readWhile(predicate: (buffer: Buffer) => boolean): void;
+    /**
+    Read from the underlying source until we have at least `length` bytes in the buffer.
+  
+    @param {number} length The number of bytes to return without consuming. This is an upper bound, since the underlying source may contain fewer than the desired bytes.
+    */
+    protected _peekBytes(length: number): Buffer;
+    /**
+    Like _peekBytes(length), but consumes the bytes, so that subsequent calls return subsequent chunks.
+  
+    @param {number} length The number of bytes to return (upper bound).
+    */
+    protected _nextBytes(length: number): Buffer;
+    /**
+    Like _nextBytes(length), but doesn't ever slice off a buffer to hold the skipped bytes.
+  
+    @param {number} length The number of bytes that were skipped (consumed without returning), which may be fewer than `length` iff EOF has been reached.
+    */
+    protected _skipBytes(length: number): number;
 }
 export declare class SourceBufferIterator extends BufferedSourceReader implements BufferIterable {
     constructor(source: Source, position?: number, block_size?: number);
-    private _ensureLength(length);
-    next(length: number): Buffer;
-    peek(length: number): Buffer;
-    /**
-    Skip over the next `length` bytes, returning the number of skipped
-    bytes (which may be < `length` iff EOF has been reached).
-    */
-    skip(length: number): number;
+    next: (length: number) => Buffer;
+    peek: (length: number) => Buffer;
+    skip: (length: number) => number;
 }
 export declare class SourceStringIterator extends BufferedSourceReader implements StringIterable {
     private _encoding;
     constructor(source: Source, _encoding: string, position?: number, block_size?: number);
-    private _ensureLength(length);
-    next(length: number): string;
     peek(length: number): string;
+    next(length: number): string;
     /**
     Skip over the next `length` characters, returning the number of skipped
     characters (which may be < `length` iff EOF has been reached).
     */
     skip(length: number): number;
-    /**
-    Provide raw Buffer-level access, too.
-    */
-    nextBytes(length: number): Buffer;
-    peekBytes(length: number): Buffer;
-    skipBytes(length: number): number;
+    nextBytes: (length: number) => Buffer;
+    peekBytes: (length: number) => Buffer;
+    skipBytes: (length: number) => number;
 }
 /**
 Tokenizer#map() and Combiner#map() both return Token iterators.
