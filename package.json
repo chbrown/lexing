@@ -16,7 +16,7 @@
   "devDependencies": {
     "babel-core": "^5.0.0",
     "mocha": "*",
-    "typescript": "next"
+    "typescript": "*"
   },
   "scripts": {
     "test": "make test"
