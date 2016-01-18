@@ -462,17 +462,8 @@ function MachineRule(regexp, callback) {
 }
 exports.MachineRule = MachineRule;
 /**
-Every MachineState has:
-
-* value: I
-  An internal value, which is incrementally built based on the input.
-* read(): T
-  This derives a value of type T from the input.
-* rules: MachineRule[]
-  Each MachineRule maps a string pattern to an instance method, which returns
-  a value of type T (or null). If a rule matches the input and the corresponding
-  instance method returns a non-null value, we should exit (pop) this state by
-  returning from read().
+Every MachineState should declare a list of rules, at least one of which should
+call this.pop() or return a value.
 
 `T` is the result Type
 `I` is the internal Type
@@ -490,16 +481,27 @@ var MachineState = (function () {
         enumerable: true,
         configurable: true
     });
-    // generic callbacks
+    /**
+    pop() returns the value of this state. When used as a rule's callback, this
+    consumes nothing from the input iterable, but triggers the end of this state
+    by returning a value.
+    */
     MachineState.prototype.pop = function () {
         return this.value;
     };
+    /**
+    ignore() returns undefined, which instructs the state to keep parsing.
+    */
     MachineState.prototype.ignore = function () {
         return undefined;
     };
     MachineState.prototype.attachState = function (SubState) {
         return new SubState(this.iterable, this.peek_length);
     };
+    /**
+    This derives a value of type T from the input, terminating with the first rule
+    that returns a value.
+    */
     MachineState.prototype.read = function () {
         while (1) {
             var input = this.iterable.peek(this.peek_length);

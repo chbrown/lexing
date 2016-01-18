@@ -285,26 +285,14 @@ export declare class Combiner<T> {
 export interface MachineCallback<T> {
     (match?: RegExpMatchArray): T;
 }
-export interface MachineRule<T> extends Array<RegExp | MachineCallback<T>> {
-    0: RegExp;
-    1: MachineCallback<T>;
-}
+export declare type MachineRule<T> = [RegExp, MachineCallback<T>];
 export declare function MachineRule<T>(regexp: RegExp, callback: MachineCallback<T>): MachineRule<T>;
 export interface MachineStateConstructor<T, I> {
     new (iterable: StringIterable, peek_length?: number): MachineState<T, I>;
 }
 /**
-Every MachineState has:
-
-* value: I
-  An internal value, which is incrementally built based on the input.
-* read(): T
-  This derives a value of type T from the input.
-* rules: MachineRule[]
-  Each MachineRule maps a string pattern to an instance method, which returns
-  a value of type T (or null). If a rule matches the input and the corresponding
-  instance method returns a non-null value, we should exit (pop) this state by
-  returning from read().
+Every MachineState should declare a list of rules, at least one of which should
+call this.pop() or return a value.
 
 `T` is the result Type
 `I` is the internal Type
@@ -312,12 +300,31 @@ Every MachineState has:
 export declare class MachineState<T, I> {
     protected iterable: StringIterable;
     protected peek_length: number;
+    /** An internal value, which is incrementally built based on the input. */
     protected value: I;
+    /**
+    Each MachineRule maps a string pattern to an instance method, which returns
+    a value of type T (or null). If a rule matches the input and the corresponding
+    instance method returns a non-null value, we should exit (pop) this state by
+    returning from read().
+    */
     protected rules: MachineRule<T>[];
     constructor(iterable: StringIterable, peek_length?: number);
     private name;
+    /**
+    pop() returns the value of this state. When used as a rule's callback, this
+    consumes nothing from the input iterable, but triggers the end of this state
+    by returning a value.
+    */
     pop(): T;
+    /**
+    ignore() returns undefined, which instructs the state to keep parsing.
+    */
     ignore(): T;
     attachState<SubT, SubI>(SubState: MachineStateConstructor<SubT, SubI>): MachineState<SubT, SubI>;
+    /**
+    This derives a value of type T from the input, terminating with the first rule
+    that returns a value.
+    */
     read(): T;
 }
