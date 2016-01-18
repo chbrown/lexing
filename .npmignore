@@ -1,4 +1,6 @@
-.travis.yml
 index.ts
+util.ts
+.travis.yml
 Makefile
 tsconfig.json
+coverage/
