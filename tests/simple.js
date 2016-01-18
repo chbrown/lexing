@@ -1,8 +1,8 @@
 import assert from 'assert';
 import {describe, it} from 'mocha';
 
-import * as lexing from '../';
-var Token = lexing.Token;
+import lexing from '../';
+const Token = lexing.Token;
 
 function readToEOF<T>(iterable: lexing.Iterable<lexing.Token<T>>): lexing.Token<T>[] {
   var items = [];

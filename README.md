@@ -1,5 +1,9 @@
 # lexing
 
+[![npm version](https://badge.fury.io/js/lexing.svg)](https://www.npmjs.com/package/lexing)
+[![Travis CI Build Status](https://travis-ci.org/chbrown/lexing.svg)](https://travis-ci.org/chbrown/lexing)
+[![Coverage Status](https://coveralls.io/repos/chbrown/lexing/badge.svg)](https://coveralls.io/github/chbrown/lexing)
+
 Lexing vs. Parsing: lexers make only a single pass (no back-tracking); parsers have transition tables and do lookahead. The lexer can have state, but it should only make state transitions based on the current input, and not look at old input while processing new input.
 
 More formally, lexers can parse Chomsky's Level 3 grammars, but you need a parser for more Level 2 grammars (you'll probably still want to use a lexer, but it won't be enough). Level 3 is the most basic of the levels, and a Level 3 language can be represented by a single regular expression, though that's probably not the most maintainable representation. Level 2 includes things like TeX's nested braces, e.g., `\textit{You don't want to \textbf{stop at the X} and not realize that the Y should still be italicized}`, or PDF's nested strings, e.g., `(This is a long string (with (in parentheses) a parenthetical))`. You'll use a lexer to split the raw input into a stream of tokens, but then you'll need a parser to resolve the stream of tokens into discrete representations, e.g., a tree in the TeX case:
