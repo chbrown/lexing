@@ -1,6 +1,13 @@
 import {Buffer, Source, SourceStringIterator} from './index';
 import {indexOf as bufferIndexOf, lastIndexOf as bufferLastIndexOf} from './buffer';
 
+declare var Buffer: {
+  new (str: string, encoding?: string): Buffer;
+  new (size: number): Buffer;
+  byteLength(string: string, encoding?: string): number;
+  concat(list: Buffer[], totalLength?: number): Buffer;
+};
+
 /**
 Starting at fromIndex (defaults to 0), read until we find `needle`.
 
