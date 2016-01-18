@@ -1,9 +1,9 @@
 import assert from 'assert';
 import {describe, it} from 'mocha';
 
-import {compare, indexOf, equalTo} from '../util';
+import {compare, indexOf, equalTo} from '../buffer';
 
-describe('util bufferops', () => {
+describe('buffer util', () => {
   describe('#compare', () => {
     var haystack = new Buffer('<< /Name (hello) >>');
     it('should start with <<', () => {

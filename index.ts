@@ -6,7 +6,7 @@ export interface Buffer {
   slice(start?: number, end?: number): Buffer;
   length: number;
 }
-declare var Buffer: {
+export declare var Buffer: {
   new (str: string, encoding?: string): Buffer;
   new (size: number): Buffer;
   byteLength(string: string, encoding?: string): number;
