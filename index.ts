@@ -535,8 +535,7 @@ class CombinerIterator<T> implements TokenIterable<T> {
 //                 Object-oriented Stack-driven State Machine
 
 export interface MachineCallback<T> { (match?: RegExpMatchArray): T }
-// type MachineRule<T> = [RegExp, MachineCallback<T>] // unfortunately doesn't work
-export interface MachineRule<T> extends Array<RegExp | MachineCallback<T>> { 0: RegExp; 1: MachineCallback<T>; }
+export type MachineRule<T> = [RegExp, MachineCallback<T>];
 export function MachineRule<T>(regexp: RegExp, callback: MachineCallback<T>): MachineRule<T> {
   return [regexp, callback];
 }
@@ -570,10 +569,17 @@ export class MachineState<T, I> {
     return this.constructor['name'];
   }
 
-  // generic callbacks
+  /**
+  pop() returns the value of this state. When used as a rule's callback, this
+  consumes nothing from the input iterable, but triggers the end of this state
+  by returning a value.
+  */
   pop(): T {
     return <any>this.value;
   }
+  /**
+  ignore() returns undefined, which instructs the state to keep parsing.
+  */
   ignore(): T {
     return undefined;
   }
