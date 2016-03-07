@@ -20,7 +20,7 @@ describe('buffer util', () => {
       assert.strictEqual(indexOf(haystack, new Buffer('hello')), 10);
     });
     it('should not have other at index 0', () => {
-      assert.strictEqual(indexOf(haystack, new Buffer('other')), null);
+      assert.strictEqual(indexOf(haystack, new Buffer('other')), undefined);
     });
   });
 
