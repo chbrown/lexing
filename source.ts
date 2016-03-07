@@ -17,7 +17,7 @@ declare var Buffer: {
 Starting at fromIndex (defaults to 0), read until we find `needle`.
 
 1. If we do find needle, return the file's position of the first character of `needle`.
-2. If we reach EOF without finding it, return null.
+2. If we reach EOF without finding it, return undefined.
 */
 export function indexOf(source: Source,
                         searchValue: string,
@@ -45,21 +45,20 @@ export function indexOf(source: Source,
     // TODO: only start looking in the haystack (`buffer`) at the old
     //   offset, backtracking by needle.length in case there's a partial match
     var needle_haystack_index = bufferIndexOf(haystack, needle, haystack_search_offset);
-    // needle_haystack_index, if not null, is the position of needle within haystack
-    if (needle_haystack_index !== null) {
+    // needle_haystack_index, if not undefined, is the position of needle within haystack
+    if (needle_haystack_index !== undefined) {
       // we found it!
       return haystack_file_position + needle_haystack_index;
     }
   }
-  // we hit EOF before finding needle; return null
-  return null;
+  // we hit EOF before finding needle; return undefined
 }
 
 /**
 Starting at fromIndex (defaults to EOF), read backwards until we find `needle`.
 
 1. If we do find needle, return the file's position of the first character of `needle`.
-2. If we reach the beginning of the file before finding it, return null.
+2. If we reach the beginning of the file before finding it, return undefined.
 */
 export function lastIndexOf(source: Source,
                             searchValue: string,
@@ -77,11 +76,10 @@ export function lastIndexOf(source: Source,
     // TODO: only start looking in the haystack (`buffer`) at the old
     //   offset, backtracking by needle.length in case there's a partial match
     var last_index_of_needle_within_haystack = bufferLastIndexOf(haystack, needle);
-    if (last_index_of_needle_within_haystack !== null) {
+    if (last_index_of_needle_within_haystack !== undefined) {
       // we found it!
       return position + last_index_of_needle_within_haystack;
     }
   }
-  // we hit EOF before finding needle; return null
-  return null;
+  // we hit EOF before finding needle; return undefined
 }
