@@ -4,6 +4,7 @@ import {indexOf as bufferIndexOf, lastIndexOf as bufferLastIndexOf} from './buff
 export interface Buffer {
   toString(encoding?: string, start?: number, end?: number): string;
   slice(start?: number, end?: number): Buffer;
+  [index: number]: number;
   length: number;
 }
 declare var Buffer: {

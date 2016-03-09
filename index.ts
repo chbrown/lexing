@@ -4,6 +4,7 @@ Very trimmed-down version of Node's Buffer.
 export interface Buffer {
   toString(encoding?: string, start?: number, end?: number): string;
   slice(start?: number, end?: number): Buffer;
+  [index: number]: number;
   length: number;
 }
 declare var Buffer: {
