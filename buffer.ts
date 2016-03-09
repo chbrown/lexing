@@ -1,13 +1,14 @@
-import {Buffer} from './index';
+export type List<T> = { [index: number]: T; length: number; };
 
 /**
 Returns true iff `haystack`, starting at fromIndex, matches `needle`.
 
 To use Pythonic slice notation, returns the result of:
 
-    haystack[fromIndex:haystack.length] == needle[:needle.length]
+    haystack[fromIndex:fromIndex + needle.length] == needle
 */
-export function compare(haystack: Buffer, needle: Buffer,
+export function compare(haystack: List<number>,
+                        needle: List<number>,
                         fromIndex: number = 0): boolean {
   if ((fromIndex + needle.length) > haystack.length) {
     // there's no way it could possibly fit, so don't even check.
@@ -27,7 +28,8 @@ occurrence of `needle` after fromIndex.
 
 Returns undefined if haystack does not contain needle.
 */
-export function indexOf(haystack: Buffer, needle: Buffer,
+export function indexOf(haystack: List<number>,
+                        needle: List<number>,
                         fromIndex: number = 0): number {
   for (var i = fromIndex; i < haystack.length; i++) {
     if (compare(haystack, needle, i)) {
@@ -42,7 +44,8 @@ occurrence of `needle` before fromIndex.
 
 Returns undefined if haystack does not contain needle.
 */
-export function lastIndexOf(haystack: Buffer, needle: Buffer,
+export function lastIndexOf(haystack: List<number>,
+                            needle: List<number>,
                             fromIndex: number = haystack.length): number {
   for (var i = fromIndex; i > -1; i--) {
     if (compare(haystack, needle, i)) {
@@ -58,8 +61,8 @@ Again, using Pythonic slice syntax, returns the result of:
 
     left[left_offset:left_length] == right[right_offset:right_length]
 */
-export function equalTo(left: Buffer,
-                        right: Buffer,
+export function equalTo(left: List<number>,
+                        right: List<number>,
                         left_offset: number = 0,
                         left_end: number = left.length - left_offset,
                         right_offset: number = 0,
