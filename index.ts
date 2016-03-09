@@ -52,25 +52,36 @@ export interface StatefulIterable<T> extends Iterable<T> {
 /**
 In some cases, it makes more sense to iterate in batches, or chunks, through an
 iterable of a particular type. The T in ChunkedIterable<T> should itself be a
-sequence type, like string[] or Buffer.
+sequence type, like string[] or Buffer (which effectively extends number[]).
 */
 export interface ChunkedIterable<T> {
+  /** Read the next {length} items from the underlying resource, and advance
+  the cursor accordingly. The returned chunk may be shorter than {length} if
+  EOF is reached. */
   next(length: number): T;
 }
 export interface StatefulChunkedIterable<T> extends ChunkedIterable<T> {
+  /** The cursor, i.e., the current position within the underlying resource. */
   position: number;
+  /** The total size of the underlying resource. */
   size: number;
+  /** Return the next {length} items from the underlying resource but do not
+  advance the cursor. */
   peek(length: number): T;
+  /** Advance the cursor over the next {length} items in the underlying
+  resource, returning the number of items actually passed over (which may be
+  less than {length} if the end of the resource has been reached). */
   skip(length: number): number;
 }
 
 // #############################################################################
 //                           BASIC BUFFER READER
 
+// Commonly used special case.
 /**
-Commonly used special case.
+A stateful representation of some resource that produces Buffer chunks.
 */
-export interface BufferIterable extends StatefulChunkedIterable<Buffer> { }
+export type BufferIterable = StatefulChunkedIterable<Buffer>;
 
 /**
 Wraps a Buffer as a stateful iterable.
