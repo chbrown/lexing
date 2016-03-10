@@ -4,6 +4,7 @@
     "target": "ES5"
   },
   "files": [
+    "lib.d.ts",
     "buffer.ts",
     "index.ts",
     "source.ts"
