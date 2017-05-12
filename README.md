@@ -70,7 +70,7 @@ If no rules in the current state match the current input, the tokenizer will thr
 
 From the shell in your project's root directory:
 
-    npm installl lexing --save
+    npm install lexing --save
 
 In your code:
 
