@@ -1,6 +1,6 @@
 {
   "name": "lexing",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Regex-based lexer",
   "keywords": [
     "lexer",
