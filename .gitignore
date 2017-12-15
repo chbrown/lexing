@@ -1,7 +1,3 @@
-buffer.js
-index.js
-source.js
-buffer.d.ts
-index.d.ts
-source.d.ts
+*.js
+*.d.ts
 coverage/
