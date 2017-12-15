@@ -1,11 +1,11 @@
-import assert from 'assert';
-import {describe, it} from 'mocha';
+import * as assert from 'assert';
+import 'mocha';
 
 import {compare, indexOf, equalTo} from '../buffer';
 
 describe('buffer util', () => {
   describe('#compare', () => {
-    var haystack = new Buffer('<< /Name (hello) >>');
+    const haystack = new Buffer('<< /Name (hello) >>');
     it('should start with <<', () => {
       assert(compare(haystack, new Buffer('<<')));
     });
@@ -15,7 +15,7 @@ describe('buffer util', () => {
   });
 
   describe('#indexOf', () => {
-    var haystack = new Buffer('<< /Name (hello) >>');
+    const haystack = new Buffer('<< /Name (hello) >>');
     it('should have hello at index 0', () => {
       assert.strictEqual(indexOf(haystack, new Buffer('hello')), 10);
     });
@@ -25,7 +25,7 @@ describe('buffer util', () => {
   });
 
   describe('#equalTo', () => {
-    var haystack = new Buffer('hello world');
+    const haystack = new Buffer('hello world');
     it('should equal hello at 0:5', () => {
       assert.strictEqual(equalTo(haystack, new Buffer('hello'), 0, 5), true);
     });
