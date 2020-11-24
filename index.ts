@@ -73,8 +73,8 @@ Wraps a Buffer as a stateful iterable.
 export class BufferIterator implements BufferIterable {
   constructor(private _buffer: Buffer, public position = 0) { }
 
-  static fromString(str: string, encoding?: string): BufferIterator {
-    var buffer = new Buffer(str, encoding);
+  static fromString(str: string, encoding?: BufferEncoding): BufferIterator {
+    var buffer = Buffer.from(str, encoding);
     return new BufferIterator(buffer);
   }
 
@@ -128,7 +128,7 @@ Wraps a string as a stateful iterable.
 export class StringIterator implements StringIterable {
   constructor(private _string: string, public position = 0) { }
 
-  static fromBuffer(buffer: Buffer, encoding?: string, start?: number, end?: number): StringIterator {
+  static fromBuffer(buffer: Buffer, encoding?: BufferEncoding, start?: number, end?: number): StringIterator {
     var str = buffer.toString(encoding, start, end);
     return new StringIterator(str);
   }
@@ -313,7 +313,7 @@ export class SourceBufferIterator extends BufferedSourceReader implements Buffer
 }
 
 export class SourceStringIterator extends BufferedSourceReader implements StringIterable {
-  constructor(source: Source, private _encoding: string, position = 0, block_size = 1024) {
+  constructor(source: Source, private _encoding: BufferEncoding, position = 0, block_size = 1024) {
     super(source, position, block_size);
   }
 
