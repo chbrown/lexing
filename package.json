@@ -7,10 +7,7 @@
     "parser"
   ],
   "homepage": "https://github.com/chbrown/lexing",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/chbrown/lexing.git"
-  },
+  "repository": "github:chbrown/lexing",
   "license": "MIT",
   "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
   "devDependencies": {
