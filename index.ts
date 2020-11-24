@@ -99,7 +99,7 @@ export class BufferIterator implements BufferIterable {
 
   Buffer#slice never returns entries beyond the end of the buffer:
 
-      `new Buffer([1, 2, 3, 4]).slice(2, 10)` produces `<Buffer 03 04>`
+      `Buffer.from([1, 2, 3, 4]).slice(2, 10)` produces `<Buffer 03 04>`
   */
   next(length: number): Buffer {
     var buffer = this._buffer.slice(this.position, this.position + length);
@@ -210,7 +210,7 @@ When calling `read()` on the underlying file, it will read in batches of
 `_block_size` (default: 1024) bytes.
 */
 export class BufferedSourceReader {
-  protected _buffer: Buffer = new Buffer(0);
+  protected _buffer: Buffer = Buffer.alloc(0);
 
   // when reading more data, pull in chunks of `block_size` bytes.
   constructor(private _source: Source,
@@ -238,7 +238,7 @@ export class BufferedSourceReader {
   @returns {boolean} If the read operation reads fewer than the requested bytes, returns false, usually signifying that EOF has been reached. Returns true if it seems that there is more available data.
   */
   private _fillBuffer(length: number): boolean {
-    var buffer = new Buffer(length);
+    var buffer = Buffer.alloc(length);
     // always read from the current position
     var bytesRead = this._source.read(buffer, 0, length, this._position);
     // and update it accordingly

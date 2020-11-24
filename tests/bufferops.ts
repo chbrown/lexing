@@ -5,35 +5,35 @@ import {compare, indexOf, equalTo} from '../buffer';
 
 describe('buffer util', () => {
   describe('#compare', () => {
-    const haystack = new Buffer('<< /Name (hello) >>');
+    const haystack = Buffer.from('<< /Name (hello) >>');
     it('should start with <<', () => {
-      assert(compare(haystack, new Buffer('<<')));
+      assert(compare(haystack, Buffer.from('<<')));
     });
     it('should not start with "other"', () => {
-      assert.strictEqual(compare(haystack, new Buffer('other')), false);
+      assert.strictEqual(compare(haystack, Buffer.from('other')), false);
     });
   });
 
   describe('#indexOf', () => {
-    const haystack = new Buffer('<< /Name (hello) >>');
+    const haystack = Buffer.from('<< /Name (hello) >>');
     it('should have hello at index 0', () => {
-      assert.strictEqual(indexOf(haystack, new Buffer('hello')), 10);
+      assert.strictEqual(indexOf(haystack, Buffer.from('hello')), 10);
     });
     it('should not have other at index 0', () => {
-      assert.strictEqual(indexOf(haystack, new Buffer('other')), undefined);
+      assert.strictEqual(indexOf(haystack, Buffer.from('other')), undefined);
     });
   });
 
   describe('#equalTo', () => {
-    const haystack = new Buffer('hello world');
+    const haystack = Buffer.from('hello world');
     it('should equal hello at 0:5', () => {
-      assert.strictEqual(equalTo(haystack, new Buffer('hello'), 0, 5), true);
+      assert.strictEqual(equalTo(haystack, Buffer.from('hello'), 0, 5), true);
     });
     it('should equal he at 0:2', () => {
-      assert.strictEqual(equalTo(haystack, new Buffer('he'), 0, 2), true);
+      assert.strictEqual(equalTo(haystack, Buffer.from('he'), 0, 2), true);
     });
     it('should not equal world at index 0:5', () => {
-      assert.strictEqual(equalTo(haystack, new Buffer('world'), 0, 5), false);
+      assert.strictEqual(equalTo(haystack, Buffer.from('world'), 0, 5), false);
     });
   });
 });

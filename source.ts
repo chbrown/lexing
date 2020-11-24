@@ -11,12 +11,12 @@ export function indexOf(source: Source,
                         searchValue: string,
                         fromIndex = 0,
                         BLOCK_SIZE = 1024): number {
-  var needle = new Buffer(searchValue);
+  var needle = Buffer.from(searchValue);
   var position = fromIndex;
-  var haystack = new Buffer(0);
+  var haystack = Buffer.alloc(0);
   var haystack_file_position = position;
   var haystack_search_offset = 0;
-  var block_buffer = new Buffer(BLOCK_SIZE);
+  var block_buffer = Buffer.alloc(BLOCK_SIZE);
   var bytesRead = BLOCK_SIZE;
   // exit loop once we read fewer bytes than intended (indicating EOF)
   while (bytesRead == BLOCK_SIZE) {
@@ -52,9 +52,9 @@ export function lastIndexOf(source: Source,
                             searchValue: string,
                             fromIndex = source.size,
                             BLOCK_SIZE = 1024): number {
-  var needle = new Buffer(searchValue);
+  var needle = Buffer.from(searchValue);
   var position = fromIndex;
-  var haystack = new Buffer(0);
+  var haystack = Buffer.alloc(0);
   // haystack's position within file is always equal to `position`
   // exit loop once we reach the beginning of the file.
   while (position > -1) {
